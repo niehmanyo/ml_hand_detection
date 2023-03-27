@@ -1,12 +1,20 @@
+# Opencv
 
-namedWindow("name")
+* namedWindow 
+* imread
+* imwrite
+* VideoCapture
+
+
+#### namedWindow("name",size)
 ```python
 import cv2
 cv2.namedWindow("name",cv2.WINDOW_AUTOSIZE)  ## to create a window
 cv2.imshow()
 ```
+---
 
-imread(文件名,FLAG)
+#### imread(文件名,FLAG)
 
 The following codes:FLAG     
 
@@ -30,3 +38,20 @@ enum ImreadModes {
        IMREAD_IGNORE_ORIENTATION   = 128 //!< If set, do not rotate the image according to EXIF's orientation flag.
      };
 ```
+----
+#### imwrite (save)
+imwrite(name,img)
+name: save_name
+img: type = mat(numpy.ndarrary)
+
+---
+
+##### VideoCapture
+source code -> *modules/videoio/include/opencv2/videoio.hp*  
+
+<p>@brief Opens a camera for video capturing
+Read the camera and get the pic</p>
+
+cap.read(): return two value, one is Boolean, one is video frame, type of frame is __numpy.ndarray__
+
+cap.release()
