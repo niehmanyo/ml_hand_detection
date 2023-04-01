@@ -1,8 +1,9 @@
-# Opencv
+class Mapping:
+pass# Opencv
 
-* [nameWindow](#### namedWindow("name",size))
-* imread
-* imwrite
+* [nameWindow](####namedWindow("name",size))
+* [imread](####imread)
+* [imwrite](####)
 * VideoCapture
 
 
@@ -60,7 +61,8 @@ cap.release()
 
 ```python
 def process(
-      self, input_data: Union[np.ndarray, Mapping[str, Union[np.ndarray,                                        message.Message]]]
+      self, input_data: Union[np.ndarray, 
+    Mapping[str, Union[np.ndarray,message.Message]]]
   ) -> NamedTuple:
     """Processes a set of RGB image data and output SolutionOutputs.
 
