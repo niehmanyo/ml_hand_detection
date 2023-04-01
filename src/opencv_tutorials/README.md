@@ -1,8 +1,7 @@
-class Mapping:
-pass# Opencv
+# Opencv
 
 * [nameWindow](####namedWindow("name",size))
-* [imread](####imread)
+* [imread](####imread(文件名,FLAG))
 * [imwrite](####)
 * VideoCapture
 

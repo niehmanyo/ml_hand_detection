@@ -7,7 +7,7 @@ import cv2
 cap = cv2.VideoCapture(0)  ## Open camera
 
 Hand = mp.solutions.hands
-hands = Hand.Hands(max_num_hands=1) ## For my project, I just need one hand
+hands = Hand.Hands(max_num_hands=1)  ## For my project, I just need one hand
 mpDraw = mp.solutions.drawing_utils
 
 preTime = 0
@@ -28,7 +28,7 @@ while True:
                 cx, cy = int(lm.x * w), int(lm.y * h)
                 print(id, cx, cy)
                 if (id == 8):
-                    cv2.circle(img,(cx,cy),25,(255,0,255),cv2.FILLED)
+                    cv2.circle(img, (cx, cy), 25, (255, 0, 255), cv2.FILLED)
             mpDraw.draw_landmarks(img, handLms, Hand.HAND_CONNECTIONS)
 
     curTime = time.time()
