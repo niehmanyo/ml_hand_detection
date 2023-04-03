@@ -1,6 +1,6 @@
 class HandDetectionModule():
     def __init__(self):
-        print("hello")
+        self.sss=1
 
 
 def main():
