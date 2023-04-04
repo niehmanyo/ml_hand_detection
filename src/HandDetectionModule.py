@@ -1,7 +1,7 @@
 import cv2
 import mediapipe as mp
 import math
-
+import time
 """
 developer: niewenyu
 """
@@ -27,10 +27,10 @@ class HandDetector():
 
         self.myHands = mp.solutions.hands  ## type = <class 'module'>
         self.hands = self.myHands.Hands(self.mode,
-                                   max_num_hands,
-                                   model_complexity,
-                                   min_detection_confidence,
-                                   min_tracking_confidence)
+                                        max_num_hands,
+                                        model_complexity,
+                                        min_detection_confidence,
+                                        min_tracking_confidence)
         self.myDraw = mp.solutions.drawing_utils
 
     def findHands(self, img):
@@ -51,18 +51,33 @@ class HandDetector():
                     if (id == 4):
                         id_4[0] = cx / 100
                         id_4[1] = cy / 100
-                        print(id, cx, cy, id_4)
+                        # print(id, cx, cy, id_4)
                     if (id == 8):
                         id_8[0] = cx / 100
                         id_8[1] = cy / 100
-                        print(id, cx, cy, id_8)
+                        # print(id, cx, cy, id_8)
                         distance = math.sqrt(math.pow((id_4[0] - id_8[0]), 2) + math.pow((id_4[1] - id_8[1]), 2))
                         if distance < 0.8:
                             cv2.circle(img, (cx, cy), 25, (255, 0, 255), cv2.FILLED)
 
-                    print("distance", distance)
-                self.mpDraw.draw_landmarks(img, handLms, Hand.HAND_CONNECTIONS)
+                #     print("distance", distance)
+                self.myDraw.draw_landmarks(img, handLms, self.myHands.HAND_CONNECTIONS)
+        return img
 
 
+def main():
+    preTime = 0
+    cap = cv2.VideoCapture(0)
+    hd = HandDetector()
+    while True:
+        curTime = time.time()
+        success, img = cap.read()
+        img = hd.findHands(img)
+        frequence = 1 / (curTime - preTime)  # 这里能够先用后定义，可能是因为使用了cv2
+        preTime = curTime
+        cv2.putText(img, str(int(frequence)), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 0), 3)
+        cv2.imshow("", img)
+        cv2.waitKey(1)
 
-print(type(myHands.Hands))
+main()
+
