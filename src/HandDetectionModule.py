@@ -6,7 +6,6 @@ import time
 developer: niewenyu
 """
 
-
 class HandDetector():
     def __init__(self,
                  static_image_mode=False,
