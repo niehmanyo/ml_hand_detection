@@ -47,3 +47,8 @@ https://datatofish.com/control-keyboard-python/ (how to control keyboard using p
 https://zh-v1.d2l.ai/chapter_introduction/deep-learning-intro.html (dive into deep learning)
 
 https://pyautogui.readthedocs.io/en/latest/keyboard.html#keyboard-keys (control keyboard)
+
+https://github.com/AndreMiras/pycaw (auto change audio) **only for windows**
+
+https://dev.to/0xkoji/control-mac-sound-volume-by-python-h4g (audio change) **for mac**
+
