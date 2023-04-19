@@ -26,11 +26,15 @@ All source codes -> [src](src)
 
 🔴 - Failed
 
-|                     | Mac  | Linux | Windows |
-|:--------------------|------|-------|---------|
-| Hand Detection      | 🟢   |       |         |
-| Gesture Recognition | 🟠   |       |         |
-| Control Keyboard    | 🟠   |       |         |
+|                  | Mac  | 
+|:-----------------|------|
+| Hand Detection   | 🟢   |   
+| Control Keyboard | 🟢   |     
+| Control Volume   | 🟢   |    
+| Control Mouse    | 🟠   |    
+| Move Screen      | 🟠     |
+
+
 
 ### Result Pictures:
 

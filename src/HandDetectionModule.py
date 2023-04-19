@@ -5,9 +5,19 @@ import time
 import osascript
 import pyautogui
 import numpy as np
+
 """
 developer: niewenyu
 """
+
+
+def controlKeyBoard():
+    pyautogui.keyDown("command")
+    pyautogui.keyDown("shift")
+    pyautogui.press("L")
+    pyautogui.keyUp("command")
+    pyautogui.keyUp("shift")
+
 
 class HandDetector():
     def __init__(self,
@@ -35,7 +45,7 @@ class HandDetector():
                                         min_tracking_confidence)
         self.myDraw = mp.solutions.drawing_utils
 
-    def findHands(self, img): # process the img and find the hand
+    def findHands(self, img):  # process the img and find the hand
         imgRGB = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
         results = self.hands.process(imgRGB)
 
@@ -43,9 +53,9 @@ class HandDetector():
             for handLms in results.multi_hand_landmarks:
                 ## handLms.landmark is the 20 landmark of my finger
                 distance = math.inf
-                h,w,c = img.shape
-                id_4 = [int(handLms.landmark[4].x * w), int(handLms.landmark[4].y*h)]
-                id_8 = [int(handLms.landmark[8].x * w), int(handLms.landmark[8].y*h)]
+                h, w, c = img.shape
+                id_4 = [int(handLms.landmark[4].x * w), int(handLms.landmark[4].y * h)]
+                id_8 = [int(handLms.landmark[8].x * w), int(handLms.landmark[8].y * h)]
                 for id, lm in enumerate(handLms.landmark):
                     # print(id,lm)
                     # print(type(handLms.landmark))
@@ -68,30 +78,24 @@ class HandDetector():
                         #     cv2.circle(img, (cx,cy), 25, (255, 0, 255), cv2.FILLED)
 
                 #     print("distance", distance)
-                distance = math.dist(id_4,id_8)
+                distance = math.dist(id_4, id_8)
                 # print("distance",distance)
 
-                # set the volume
-                # volume = 100/260*(distance-20)
-                # osascript.osascript("set volume output volume "+str(volume))
                 if distance < 30:
-                    pyautogui.keyDown("command")
-                    pyautogui.keyDown("shift")
-                    pyautogui.press("L")
-                    pyautogui.keyUp("command")
-                    pyautogui.keyUp("shift")
+                    # set the volume
+                    volume = 100 / 260 * (distance - 20)
+                    osascript.osascript("set volume output volume " + str(volume))
 
-                # cv2.line(img,id_4,id_8,(255,255,255),3)
+                if distance > 300:
+                    controlKeyBoard()
+
+                cv2.line(img,id_4,id_8,(255,255,255),3)
                 self.myDraw.draw_landmarks(img, handLms, self.myHands.HAND_CONNECTIONS)
 
         return img
 
-    def findPosition(self,img,handNo=0):
+    def findPosition(self, img, handNo=0):
         results = self.hands.process(img)
-
-
-
-
 
 
 def main():
@@ -108,6 +112,6 @@ def main():
         cv2.imshow("", img)
         cv2.waitKey(1)
 
+
 if __name__ == "__main__":
     main()
-
