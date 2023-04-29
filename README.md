@@ -21,7 +21,9 @@ All source codes -> [src](src)
 
 ### Program Information
 
-* TensorFlow
+#### DeepLearning Framework
+
+* Mediapipe 
 * 
 🟠 - Developing
  

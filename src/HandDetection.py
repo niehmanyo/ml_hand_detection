@@ -45,10 +45,11 @@ while True:
                 print("distance", distance)
             mpDraw.draw_landmarks(img, handLms, Hand.HAND_CONNECTIONS)
 
+    preTime = 0
     curTime = time.time()
-    frequence = 1 / (curTime - preTime)  # 这里能够先用后定义，可能是因为使用了cv2
+    frequency = 1 / (curTime - preTime)  # 这里能够先用后定义，可能是因为使用了cv2
     preTime = curTime
 
-    cv2.putText(img, str(int(frequence)), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 0), 3)
+    cv2.putText(img, str(int(frequency)), (20, 50), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 0), 3)
     cv2.imshow("", img)
     cv2.waitKey(1)
