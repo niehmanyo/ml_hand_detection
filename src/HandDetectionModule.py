@@ -6,6 +6,8 @@ import osascript
 import pyautogui
 import numpy as np
 
+from HandAlgorithm import HandAlgorithm
+
 """
 developer: niewenyu
 """
@@ -81,14 +83,15 @@ class HandDetector():
                 distance = math.dist(id_4, id_8)
                 # print("distance",distance)
 
-                if distance < 30:
-                    # set the volume
-                    volume = 100 / 260 * (distance - 20)
-                    osascript.osascript("set volume output volume " + str(volume))
-
-                if distance > 300:
-                    controlKeyBoard()
-
+                # if distance < 30:
+                #     # set the volume
+                #     volume = 100 / 260 * (distance - 20)
+                #     osascript.osascript("set volume output volume " + str(volume))
+                #
+                # if distance > 300:
+                #     controlKeyBoard()
+                algo = HandAlgorithm()
+                finger = algo.determineGesture(handLms)
                 cv2.line(img,id_4,id_8,(255,255,255),3)
                 self.myDraw.draw_landmarks(img, handLms, self.myHands.HAND_CONNECTIONS)
 
