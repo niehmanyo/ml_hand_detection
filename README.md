@@ -24,6 +24,8 @@ All source codes -> [src](src)
 #### DeepLearning Framework
 
 * Mediapipe 
+* PyTorch
+* YOLOv5
 * 
 🟠 - Developing
  
@@ -31,12 +33,12 @@ All source codes -> [src](src)
 
 🔴 - Failed
 
-|                  | Mac  | 
-|:-----------------|------|
-| Hand Detection   | 🟢   |   
-| Control Keyboard | 🟢   |     
-| Control Volume   | 🟢   |    
-| Control Mouse    | 🟠   |    
+|                  | Mac    | 
+|:-----------------|--------|
+| Hand Detection   | 🟢     |   
+| Control Keyboard | 🟢     |     
+| Control Volume   | 🟢     |    
+| Control Mouse    | 🟠     |    
 | Move Screen      | 🟠     |
 
 
@@ -47,7 +49,7 @@ click here ->
 
 ### Reference:
 
-https://www.markdownguide.org/ (markdownguide)
+https://www.markdownguide.org/ (markdown guide)
 
 https://github.com/google/mediapipe (mediapipe)
 
@@ -61,3 +63,6 @@ https://github.com/AndreMiras/pycaw (auto change audio) **only for windows**
 
 https://dev.to/0xkoji/control-mac-sound-volume-by-python-h4g (audio change) **for mac**
 
+https://www.youtube.com/watch?v=tFNJGim3FXw (deep learning model(YOLOv5))
+
+https://github.com/ultralytics/yolov5 (YOLOv5 github)
