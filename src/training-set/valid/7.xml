@@ -1,0 +1,26 @@
+<annotation>
+	<folder>image</folder>
+	<filename>7.jpg</filename>
+	<path>/Users/kobe/ml_hand_detection/src/training-set/image/7.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>1280</width>
+		<height>1707</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>Left</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>433</xmin>
+			<ymin>854</ymin>
+			<xmax>898</xmax>
+			<ymax>1108</ymax>
+		</bndbox>
+	</object>
+</annotation>

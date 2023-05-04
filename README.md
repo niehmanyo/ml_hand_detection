@@ -66,3 +66,5 @@ https://dev.to/0xkoji/control-mac-sound-volume-by-python-h4g (audio change) **fo
 https://www.youtube.com/watch?v=tFNJGim3FXw (deep learning model(YOLOv5))
 
 https://github.com/ultralytics/yolov5 (YOLOv5 github)
+
+https://docs.ultralytics.com/yolov5/tutorials/train_custom_data/ (use yolov5)
