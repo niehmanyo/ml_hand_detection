@@ -43,9 +43,9 @@ All source codes -> [src](src)
 
 
 
-### Result Pictures:
+### Results:
 
-click here ->
+training model dic -> [VOCData](yolov5/VOCData)
 
 ### Reference:
 
@@ -68,3 +68,7 @@ https://www.youtube.com/watch?v=tFNJGim3FXw (deep learning model(YOLOv5))
 https://github.com/ultralytics/yolov5 (YOLOv5 github)
 
 https://docs.ultralytics.com/yolov5/tutorials/train_custom_data/ (use yolov5)
+
+https://blog.csdn.net/qq_45945548/article/details/121701492 (How to use yolov5)
+
+

@@ -1,4 +1,9 @@
 import torch
 
-print(torch.rand(5,5)*10)
+model = torch.hub.load("ultralytics/yolov5","yolov5s")
 
+img = "../VOCData/images/1.jpg"
+
+result = model(img)
+
+print(result)

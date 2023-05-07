@@ -12,7 +12,7 @@ mpDraw = mp.solutions.drawing_utils
 model = load_model('mp_hand_gesture')
 preTime = 0
 
-img = cv2.imread("training-set/image/1.jpg")
+img = cv2.imread("../yolov5/VOCData/images/1.jpg")
 imgRGB = cv2.cvtColor(img, cv2.COLOR_RGBA2BGR)
 
 results = hands.process(imgRGB)

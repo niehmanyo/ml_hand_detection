@@ -63,18 +63,18 @@ def process(
       self, input_data: Union[np.ndarray, 
     Mapping[str, Union[np.ndarray,message.Message]]]
   ) -> NamedTuple:
-    """Processes a set of RGB image data and output SolutionOutputs.
+    """Processes a set of RGB images data and output SolutionOutputs.
 
     Args:
       input_data: Either a single numpy ndarray object representing the solo
-        image input of a graph or a mapping from the stream name to the image or
+        images input of a graph or a mapping from the stream name to the images or
         proto data that represents every input streams of a graph.
 
     Raises:
       NotImplementedError: If input_data contains audio data or a list of proto
         objects.
       RuntimeError: If the underlying graph occurs any error.
-      ValueError: If the input image data is not three channel RGB.
+      ValueError: If the input images data is not three channel RGB.
 
     Returns:
       A NamedTuple object that contains the output data of a graph run.
@@ -94,7 +94,7 @@ def process(
     if isinstance(input_data, np.ndarray):
       if len(self._input_stream_type_info.keys()) != 1:
         raise ValueError(
-            "Can't process single image input since the graph has more than one input streams."
+            "Can't process single images input since the graph has more than one input streams."
         )
       input_dict = {next(iter(self._input_stream_type_info)): input_data}
     else:
@@ -115,7 +115,7 @@ def process(
       elif (input_stream_type == PacketDataType.IMAGE_FRAME or
             input_stream_type == PacketDataType.IMAGE):
         if data.shape[2] != RGB_CHANNELS:
-          raise ValueError('Input image must contain three channel rgb data.')
+          raise ValueError('Input images must contain three channel rgb data.')
         self._graph.add_packet_to_input_stream(
             stream=stream_name,
             packet=self._make_packet(input_stream_type,
