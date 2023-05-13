@@ -14,3 +14,6 @@ f = open('gesture.names', 'r')
 classNames = f.read().split("\n")
 f.close()
 print(classNames)
+
+
+

@@ -83,16 +83,22 @@ class HandDetector():
                 distance = math.dist(id_4, id_8)
                 # print("distance",distance)
 
-                # if distance < 30:
-                #     # set the volume
-                #     volume = 100 / 260 * (distance - 20)
-                #     osascript.osascript("set volume output volume " + str(volume))
+
                 #
                 # if distance > 300:
                 #     controlKeyBoard()
-                algo = HandAlgorithm()
-                finger = algo.determineGesture(handLms)
-                cv2.line(img,id_4,id_8,(255,255,255),3)
+
+                x = pyautogui.size().width * handLms.landmark[0].x
+                y = pyautogui.size().height * handLms.landmark[0].y
+                pyautogui.moveTo(x,y)
+                if distance < 30:
+                    # set the volume
+                    # volume = 100 / 260 * (distance - 20)
+                    # osascript.osascript("set volume output volume " + str(volume))
+                    pyautogui.mouseDown()
+                else:
+                    pyautogui.mouseUp()
+                cv2.line(img, id_4, id_8, (255, 255, 255), 3)
                 self.myDraw.draw_landmarks(img, handLms, self.myHands.HAND_CONNECTIONS)
 
         return img
