@@ -732,17 +732,17 @@ def colorstr(*input):
 
 
 def labels_to_class_weights(labels, nc=80):
-    # Get class weights (inverse frequency) from training labels
-    if labels[0] is None:  # no labels loaded
+    # Get class weights (inverse frequency) from training annotations
+    if labels[0] is None:  # no annotations loaded
         return torch.Tensor()
 
-    labels = np.concatenate(labels, 0)  # labels.shape = (866643, 5) for COCO
-    classes = labels[:, 0].astype(int)  # labels = [class xywh]
+    labels = np.concatenate(labels, 0)  # annotations.shape = (866643, 5) for COCO
+    classes = labels[:, 0].astype(int)  # annotations = [class xywh]
     weights = np.bincount(classes, minlength=nc)  # occurrences per class
 
     # Prepend gridpoint count (for uCE training)
     # gpi = ((320 / 32 * np.array([1, 2, 4])) ** 2 * 3).sum()  # gridpoints per images
-    # weights = np.hstack([gpi * len(labels)  - weights.sum() * 9, weights * 9]) ** 0.5  # prepend gridpoints to start
+    # weights = np.hstack([gpi * len(annotations)  - weights.sum() * 9, weights * 9]) ** 0.5  # prepend gridpoints to start
 
     weights[weights == 0] = 1  # replace empty bins with 1
     weights = 1 / weights  # number of targets per class
@@ -828,7 +828,7 @@ def segment2box(segment, width=640, height=640):
 
 
 def segments2boxes(segments):
-    # Convert segment labels to box labels, i.e. (cls, xy1, xy2, ...) to (cls, xywh)
+    # Convert segment annotations to box annotations, i.e. (cls, xy1, xy2, ...) to (cls, xywh)
     boxes = []
     for s in segments:
         x, y = s.T  # segment xy
@@ -940,7 +940,7 @@ def non_max_suppression(
     max_nms = 30000  # maximum number of boxes into torchvision.ops.nms()
     time_limit = 0.5 + 0.05 * bs  # seconds to quit after
     redundant = True  # require redundant detections
-    multi_label &= nc > 1  # multiple labels per box (adds 0.5ms/img)
+    multi_label &= nc > 1  # multiple annotations per box (adds 0.5ms/img)
     merge = False  # use merge-NMS
 
     t = time.time()
@@ -951,7 +951,7 @@ def non_max_suppression(
         # x[((x[..., 2:4] < min_wh) | (x[..., 2:4] > max_wh)).any(1), 4] = 0  # width-height
         x = x[xc[xi]]  # confidence
 
-        # Cat apriori labels if autolabelling
+        # Cat apriori annotations if autolabelling
         if labels and len(labels[xi]):
             lb = labels[xi]
             v = torch.zeros((len(lb), nc + nm + 5), device=x.device)

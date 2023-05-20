@@ -115,7 +115,7 @@ class TFDWConvTranspose2d(keras.layers.Layer):
         # ch_in, ch_out, weights, kernel, stride, padding, groups
         super().__init__()
         assert c1 == c2, f'TFDWConv() output={c2} must be equal to input={c1} channels'
-        assert k == 4 and p1 == 1, 'TFDWConv() only labels for k=4 and p1=1'
+        assert k == 4 and p1 == 1, 'TFDWConv() only annotations for k=4 and p1=1'
         weight, bias = w.weight.permute(2, 3, 1, 0).numpy(), w.bias.numpy()
         self.c1 = c1
         self.conv = [

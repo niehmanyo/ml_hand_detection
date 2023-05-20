@@ -153,7 +153,7 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
                                                            shear=hyp['shear'],
                                                            perspective=hyp['perspective'])
 
-        nl = len(labels)  # number of labels
+        nl = len(labels)  # number of annotations
         if nl:
             labels[:, 1:5] = xyxy2xywhn(labels[:, 1:5], w=img.shape[1], h=img.shape[0], clip=True, eps=1e-3)
             if self.overlap:
@@ -193,7 +193,7 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
                     labels[:, 1] = 1 - labels[:, 1]
                     masks = torch.flip(masks, dims=[2])
 
-            # Cutouts  # labels = cutout(img, labels, p=0.5)
+            # Cutouts  # annotations = cutout(img, annotations, p=0.5)
 
         labels_out = torch.zeros((nl, 6))
         if nl:
@@ -244,7 +244,7 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
             labels4.append(labels)
             segments4.extend(segments)
 
-        # Concat/clip labels
+        # Concat/clip annotations
         labels4 = np.concatenate(labels4, 0)
         for x in (labels4[:, 1:], *segments4):
             np.clip(x, 0, 2 * s, out=x)  # clip when using random_perspective()

@@ -298,8 +298,8 @@ class CometLogger:
         labelsn = None
         if nl:
             tbox = xywh2xyxy(labels[:, 1:5])  # target boxes
-            scale_boxes(image.shape[1:], tbox, shape[0], shape[1])  # native-space labels
-            labelsn = torch.cat((labels[:, 0:1], tbox), 1)  # native-space labels
+            scale_boxes(image.shape[1:], tbox, shape[0], shape[1])  # native-space annotations
+            labelsn = torch.cat((labels[:, 0:1], tbox), 1)  # native-space annotations
             scale_boxes(image.shape[1:], predn[:, :4], shape[0], shape[1])  # native-space pred
 
         return predn, labelsn

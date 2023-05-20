@@ -427,13 +427,13 @@ class LoadStreams:
 
 def img2label_paths(img_paths):
     # Define label paths as a function of images paths
-    sa, sb = f'{os.sep}images{os.sep}', f'{os.sep}labels{os.sep}'  # /images/, /labels/ substrings
+    sa, sb = f'{os.sep}images{os.sep}', f'{os.sep}annotations{os.sep}'  # /images/, /annotations/ substrings
     return [sb.join(x.rsplit(sa, 1)).rsplit('.', 1)[0] + '.txt' for x in img_paths]
 
 
 class LoadImagesAndLabels(Dataset):
-    # YOLOv5 train_loader/val_loader, loads images and labels for training and validation
-    cache_version = 0.6  # dataset labels *.cache version
+    # YOLOv5 train_loader/val_loader, loads images and annotations for training and validation
+    cache_version = 0.6  # dataset annotations *.cache version
     rand_interp_methods = [cv2.INTER_NEAREST, cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_AREA, cv2.INTER_LANCZOS4]
 
     def __init__(self,
@@ -483,7 +483,7 @@ class LoadImagesAndLabels(Dataset):
             raise Exception(f'{prefix}Error loading data from {path}: {e}\n{HELP_URL}') from e
 
         # Check cache
-        self.label_files = img2label_paths(self.im_files)  # labels
+        self.label_files = img2label_paths(self.im_files)  # annotations
         cache_path = (p if p.is_file() else Path(self.label_files[0]).parent).with_suffix('.cache')
         try:
             cache, exists = np.load(cache_path, allow_pickle=True).item(), True  # load dict
@@ -499,13 +499,13 @@ class LoadImagesAndLabels(Dataset):
             tqdm(None, desc=prefix + d, total=n, initial=n, bar_format=TQDM_BAR_FORMAT)  # display cache results
             if cache['msgs']:
                 LOGGER.info('\n'.join(cache['msgs']))  # display warnings
-        assert nf > 0 or not augment, f'{prefix}No labels found in {cache_path}, can not start training. {HELP_URL}'
+        assert nf > 0 or not augment, f'{prefix}No annotations found in {cache_path}, can not start training. {HELP_URL}'
 
         # Read cache
         [cache.pop(k) for k in ('hash', 'version', 'msgs')]  # remove items
         labels, shapes, self.segments = zip(*cache.values())
-        nl = len(np.concatenate(labels, 0))  # number of labels
-        assert nl > 0 or not augment, f'{prefix}All labels empty in {cache_path}, can not start training. {HELP_URL}'
+        nl = len(np.concatenate(labels, 0))  # number of annotations
+        assert nl > 0 or not augment, f'{prefix}All annotations empty in {cache_path}, can not start training. {HELP_URL}'
         self.labels = list(labels)
         self.shapes = np.array(shapes)
         self.im_files = list(cache.keys())  # update
@@ -529,8 +529,8 @@ class LoadImagesAndLabels(Dataset):
         self.n = n
         self.indices = range(n)
 
-        # Update labels
-        include_class = []  # filter labels to include only these classes (optional)
+        # Update annotations
+        include_class = []  # filter annotations to include only these classes (optional)
         self.segments = list(self.segments)
         include_class_array = np.array(include_class).reshape(1, -1)
         for i, (label, segment) in enumerate(zip(self.labels, self.segments)):
@@ -604,8 +604,8 @@ class LoadImagesAndLabels(Dataset):
                         f"{'caching images ✅' if cache else 'not caching images ⚠️'}")
         return cache
 
-    def cache_labels(self, path=Path('./labels.cache'), prefix=''):
-        # Cache dataset labels, check images and read shapes
+    def cache_labels(self, path=Path('./annotations.cache'), prefix=''):
+        # Cache dataset annotations, check images and read shapes
         x = {}  # dict
         nm, nf, ne, nc, msgs = 0, 0, 0, 0, []  # number missing, found, empty, corrupt, messages
         desc = f'{prefix}Scanning {path.parent / path.stem}...'
@@ -629,7 +629,7 @@ class LoadImagesAndLabels(Dataset):
         if msgs:
             LOGGER.info('\n'.join(msgs))
         if nf == 0:
-            LOGGER.warning(f'{prefix}WARNING ⚠️ No labels found in {path}. {HELP_URL}')
+            LOGGER.warning(f'{prefix}WARNING ⚠️ No annotations found in {path}. {HELP_URL}')
         x['hash'] = get_hash(self.label_files + self.im_files)
         x['results'] = nf, nm, ne, nc, len(self.im_files)
         x['msgs'] = msgs  # warnings
@@ -687,7 +687,7 @@ class LoadImagesAndLabels(Dataset):
                                                  shear=hyp['shear'],
                                                  perspective=hyp['perspective'])
 
-        nl = len(labels)  # number of labels
+        nl = len(labels)  # number of annotations
         if nl:
             labels[:, 1:5] = xyxy2xywhn(labels[:, 1:5], w=img.shape[1], h=img.shape[0], clip=True, eps=1E-3)
 
@@ -712,8 +712,8 @@ class LoadImagesAndLabels(Dataset):
                     labels[:, 1] = 1 - labels[:, 1]
 
             # Cutouts
-            # labels = cutout(img, labels, p=0.5)
-            # nl = len(labels)  # update after cutout
+            # annotations = cutout(img, annotations, p=0.5)
+            # nl = len(annotations)  # update after cutout
 
         labels_out = torch.zeros((nl, 6))
         if nl:
@@ -786,7 +786,7 @@ class LoadImagesAndLabels(Dataset):
             labels4.append(labels)
             segments4.extend(segments)
 
-        # Concat/clip labels
+        # Concat/clip annotations
         labels4 = np.concatenate(labels4, 0)
         for x in (labels4[:, 1:], *segments4):
             np.clip(x, 0, 2 * s, out=x)  # clip when using random_perspective()
@@ -858,7 +858,7 @@ class LoadImagesAndLabels(Dataset):
         yc, xc = (int(random.uniform(0, s)) for _ in self.mosaic_border)  # mosaic center x, y
         img9 = img9[yc:yc + 2 * s, xc:xc + 2 * s]
 
-        # Concat/clip labels
+        # Concat/clip annotations
         labels9 = np.concatenate(labels9, 0)
         labels9[:, [1, 3]] -= xc
         labels9[:, [2, 4]] -= yc
@@ -940,11 +940,11 @@ def extract_boxes(path=DATASETS_DIR / 'coco128'):  # from utils.dataloaders impo
             im = cv2.imread(str(im_file))[..., ::-1]  # BGR to RGB
             h, w = im.shape[:2]
 
-            # labels
+            # annotations
             lb_file = Path(img2label_paths([str(im_file)])[0])
             if Path(lb_file).exists():
                 with open(lb_file) as f:
-                    lb = np.array([x.split() for x in f.read().strip().splitlines()], dtype=np.float32)  # labels
+                    lb = np.array([x.split() for x in f.read().strip().splitlines()], dtype=np.float32)  # annotations
 
                 for j, x in enumerate(lb):
                     c = int(x[0])  # class
@@ -1006,7 +1006,7 @@ def verify_image_label(args):
                     ImageOps.exif_transpose(Image.open(im_file)).save(im_file, 'JPEG', subsampling=0, quality=100)
                     msg = f'{prefix}WARNING ⚠️ {im_file}: corrupt JPEG restored and saved'
 
-        # verify labels
+        # verify annotations
         if os.path.isfile(lb_file):
             nf = 1  # label found
             with open(lb_file) as f:
@@ -1018,7 +1018,7 @@ def verify_image_label(args):
                 lb = np.array(lb, dtype=np.float32)
             nl = len(lb)
             if nl:
-                assert lb.shape[1] == 5, f'labels require 5 columns, {lb.shape[1]} columns detected'
+                assert lb.shape[1] == 5, f'annotations require 5 columns, {lb.shape[1]} columns detected'
                 assert (lb >= 0).all(), f'negative label values {lb[lb < 0]}'
                 assert (lb[:, 1:] <= 1).all(), f'non-normalized or out of bounds coordinates {lb[:, 1:][lb[:, 1:] > 1]}'
                 _, i = np.unique(lb, axis=0, return_index=True)
@@ -1026,7 +1026,7 @@ def verify_image_label(args):
                     lb = lb[i]  # remove duplicates
                     if segments:
                         segments = [segments[x] for x in i]
-                    msg = f'{prefix}WARNING ⚠️ {im_file}: {nl - len(i)} duplicate labels removed'
+                    msg = f'{prefix}WARNING ⚠️ {im_file}: {nl - len(i)} duplicate annotations removed'
             else:
                 ne = 1  # label empty
                 lb = np.zeros((0, 5), dtype=np.float32)
@@ -1115,7 +1115,7 @@ class HUBDatasetStats():
     def get_json(self, save=False, verbose=False):
         # Return dataset JSON for Ultralytics HUB
         def _round(labels):
-            # Update labels to integer class and 6 decimal place floats
+            # Update annotations to integer class and 6 decimal place floats
             return [[int(c), *(round(x, 4) for x in points)] for c, *points in labels]
 
         for split in 'train', 'val', 'test':
@@ -1134,7 +1134,7 @@ class HUBDatasetStats():
                     'total': dataset.n,
                     'unlabelled': int(np.all(x == 0, 1).sum()),
                     'per_class': (x > 0).sum(0).tolist()},
-                'labels': [{
+                'annotations': [{
                     str(Path(k).name): _round(v.tolist())} for k, v in zip(dataset.im_files, dataset.labels)]}
 
         # Save, print and return

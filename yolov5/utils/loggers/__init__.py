@@ -160,7 +160,7 @@ class Loggers():
         # Callback runs on pre-train routine end
         if self.plots:
             plot_labels(labels, names, self.save_dir)
-            paths = self.save_dir.glob('*labels*.jpg')  # training labels
+            paths = self.save_dir.glob('*annotations*.jpg')  # training annotations
             if self.wandb:
                 self.wandb.log({'Labels': [wandb.Image(str(x), caption=x.name) for x in paths]})
             # if self.clearml:

@@ -71,4 +71,6 @@ https://docs.ultralytics.com/yolov5/tutorials/train_custom_data/ (use yolov5)
 
 https://blog.csdn.net/qq_45945548/article/details/121701492 (How to use yolov5)
 
+https://blog.csdn.net/didiaopao/article/details/119954291 (How to use yolov5)
+
 

@@ -258,7 +258,7 @@ def train(opt, device):
                     f'\nVisualize:       https://netron.app\n')
 
         # Plot examples
-        images, labels = (x[:25] for x in next(iter(testloader)))  # first 25 images and labels
+        images, labels = (x[:25] for x in next(iter(testloader)))  # first 25 images and annotations
         pred = torch.max(ema.ema(images.to(device)), 1)[1]
         file = imshow_cls(images, labels, pred, de_parallel(model).names, verbose=False, f=save_dir / 'test_images.jpg')
 
@@ -305,7 +305,7 @@ def main(opt):
     # DDP mode
     device = select_device(opt.device, batch_size=opt.batch_size)
     if LOCAL_RANK != -1:
-        assert opt.batch_size != -1, 'AutoBatch is coming soon for classification, please pass a labels --batch-size'
+        assert opt.batch_size != -1, 'AutoBatch is coming soon for classification, please pass a annotations --batch-size'
         assert opt.batch_size % WORLD_SIZE == 0, f'--batch-size {opt.batch_size} must be multiple of WORLD_SIZE'
         assert torch.cuda.device_count() > LOCAL_RANK, 'insufficient CUDA devices for DDP command'
         torch.cuda.set_device(LOCAL_RANK)

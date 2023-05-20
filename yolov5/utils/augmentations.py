@@ -92,7 +92,7 @@ def hist_equalize(im, clahe=True, bgr=False):
 
 
 def replicate(im, labels):
-    # Replicate labels
+    # Replicate annotations
     h, w = im.shape[:2]
     boxes = labels[:, 1:].astype(int)
     x1, y1, x2, y2 = boxes.T
@@ -238,7 +238,7 @@ def random_perspective(im,
 
 
 def copy_paste(im, labels, segments, p=0.5):
-    # Implement Copy-Paste augmentation https://arxiv.org/abs/2012.07177, labels as nx5 np.array(cls, xyxy)
+    # Implement Copy-Paste augmentation https://arxiv.org/abs/2012.07177, annotations as nx5 np.array(cls, xyxy)
     n = len(segments)
     if p and n:
         h, w, c = im.shape  # height, width, channels
@@ -247,7 +247,7 @@ def copy_paste(im, labels, segments, p=0.5):
             l, s = labels[j], segments[j]
             box = w - l[3], l[2], w - l[1], l[4]
             ioa = bbox_ioa(box, labels[:, 1:5])  # intersection over area
-            if (ioa < 0.30).all():  # allow 30% obscuration of existing labels
+            if (ioa < 0.30).all():  # allow 30% obscuration of existing annotations
                 labels = np.concatenate((labels, [[l[0], *box]]), 0)
                 segments.append(np.concatenate((w - s[:, 0:1], s[:, 1:2]), 1))
                 cv2.drawContours(im_new, [segments[j].astype(np.int32)], -1, (1, 1, 1), cv2.FILLED)
@@ -277,11 +277,11 @@ def cutout(im, labels, p=0.5):
             # apply random color mask
             im[ymin:ymax, xmin:xmax] = [random.randint(64, 191) for _ in range(3)]
 
-            # return unobscured labels
+            # return unobscured annotations
             if len(labels) and s > 0.03:
                 box = np.array([xmin, ymin, xmax, ymax], dtype=np.float32)
                 ioa = bbox_ioa(box, xywhn2xyxy(labels[:, 1:5], w, h))  # intersection over area
-                labels = labels[ioa < 0.60]  # remove >60% obscured labels
+                labels = labels[ioa < 0.60]  # remove >60% obscured annotations
 
     return labels
 

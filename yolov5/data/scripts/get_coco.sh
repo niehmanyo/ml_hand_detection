@@ -24,7 +24,7 @@ else
   segments=false
 fi
 
-# Download/unzip labels
+# Download/unzip annotations
 d='../datasets' # unzip directory
 url=https://github.com/ultralytics/yolov5/releases/download/v1.0/
 if [ "$segments" == "true" ]; then

@@ -15,7 +15,7 @@ from ..plots import Annotator, colors
 
 @threaded
 def plot_images_and_masks(images, targets, masks, paths=None, fname='images.jpg', names=None):
-    # Plot images grid with labels
+    # Plot images grid with annotations
     if isinstance(images, torch.Tensor):
         images = images.cpu().float().numpy()
     if isinstance(targets, torch.Tensor):
@@ -61,7 +61,7 @@ def plot_images_and_masks(images, targets, masks, paths=None, fname='images.jpg'
 
             boxes = xywh2xyxy(ti[:, 2:6]).T
             classes = ti[:, 1].astype('int')
-            labels = ti.shape[1] == 6  # labels if no conf column
+            labels = ti.shape[1] == 6  # annotations if no conf column
             conf = None if labels else ti[:, 6]  # check for confidence presence (label vs pred)
 
             if boxes.shape[1]:
