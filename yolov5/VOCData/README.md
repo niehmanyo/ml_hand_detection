@@ -1,4 +1,0 @@
-# argparse
-
-![](argparse.png)
-

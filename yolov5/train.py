@@ -237,7 +237,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
     nl = de_parallel(model).model[-1].nl  # number of detection layers (to scale hyps)
     hyp['box'] *= 3 / nl  # scale to layers
     hyp['cls'] *= nc / 80 * 3 / nl  # scale to classes and layers
-    hyp['obj'] *= (imgsz / 640) ** 2 * 3 / nl  # scale to images size and layers
+    hyp['obj'] *= (imgsz / 640) ** 2 * 3 / nl  # scale to image size and layers
     hyp['label_smoothing'] = opt.label_smoothing
     model.nc = nc  # attach number of classes to model
     model.hyp = hyp  # attach hyperparameters to model
@@ -265,10 +265,10 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
         callbacks.run('on_train_epoch_start')
         model.train()
 
-        # Update images weights (optional, single-GPU only)
+        # Update image weights (optional, single-GPU only)
         if opt.image_weights:
             cw = model.class_weights.cpu().numpy() * (1 - maps) ** 2 / nc  # class weights
-            iw = labels_to_image_weights(dataset.labels, nc=nc, class_weights=cw)  # images weights
+            iw = labels_to_image_weights(dataset.labels, nc=nc, class_weights=cw)  # image weights
             dataset.indices = random.choices(range(dataset.n), weights=iw, k=dataset.n)  # rand weighted idx
 
         # Update mosaic border (optional)
@@ -442,7 +442,7 @@ def parse_opt(known=False):
     parser.add_argument('--hyp', type=str, default=ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=100, help='total training epochs')
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs, -1 for autobatch')
-    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val images size (pixels)')
+    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val image size (pixels)')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
@@ -451,8 +451,8 @@ def parse_opt(known=False):
     parser.add_argument('--noplots', action='store_true', help='save no plot files')
     parser.add_argument('--evolve', type=int, nargs='?', const=300, help='evolve hyperparameters for x generations')
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')
-    parser.add_argument('--cache', type=str, nargs='?', const='ram', help='images --cache ram/disk')
-    parser.add_argument('--images-weights', action='store_true', help='use weighted images selection for training')
+    parser.add_argument('--cache', type=str, nargs='?', const='ram', help='image --cache ram/disk')
+    parser.add_argument('--image-weights', action='store_true', help='use weighted image selection for training')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--multi-scale', action='store_true', help='vary img-size +/- 50%%')
     parser.add_argument('--single-cls', action='store_true', help='train multi-class data as single-class')
@@ -474,7 +474,7 @@ def parse_opt(known=False):
     # Logger arguments
     parser.add_argument('--entity', default=None, help='Entity')
     parser.add_argument('--upload_dataset', nargs='?', const=True, default=False, help='Upload data, "val" option')
-    parser.add_argument('--bbox_interval', type=int, default=-1, help='Set bounding-box images logging interval')
+    parser.add_argument('--bbox_interval', type=int, default=-1, help='Set bounding-box image logging interval')
     parser.add_argument('--artifact_alias', type=str, default='latest', help='Version of dataset artifact to use')
 
     return parser.parse_known_args()[0] if known else parser.parse_args()
@@ -485,7 +485,7 @@ def main(opt, callbacks=Callbacks()):
     if RANK in {-1, 0}:
         print_args(vars(opt))
         check_git_status()
-        check_requirements()
+        check_requirements(ROOT / 'requirements.txt')
 
     # Resume (from specified or most recent last.pt)
     if opt.resume and not check_comet_resume(opt) and not opt.evolve:
@@ -517,7 +517,7 @@ def main(opt, callbacks=Callbacks()):
     device = select_device(opt.device, batch_size=opt.batch_size)
     if LOCAL_RANK != -1:
         msg = 'is not compatible with YOLOv5 Multi-GPU DDP training'
-        assert not opt.image_weights, f'--images-weights {msg}'
+        assert not opt.image_weights, f'--image-weights {msg}'
         assert not opt.evolve, f'--evolve {msg}'
         assert opt.batch_size != -1, f'AutoBatch with --batch-size -1 {msg}, please pass a valid --batch-size'
         assert opt.batch_size % WORLD_SIZE == 0, f'--batch-size {opt.batch_size} must be multiple of WORLD_SIZE'
@@ -550,18 +550,18 @@ def main(opt, callbacks=Callbacks()):
             'anchor_t': (1, 2.0, 8.0),  # anchor-multiple threshold
             'anchors': (2, 2.0, 10.0),  # anchors per output grid (0 to ignore)
             'fl_gamma': (0, 0.0, 2.0),  # focal loss gamma (efficientDet default gamma=1.5)
-            'hsv_h': (1, 0.0, 0.1),  # images HSV-Hue augmentation (fraction)
-            'hsv_s': (1, 0.0, 0.9),  # images HSV-Saturation augmentation (fraction)
-            'hsv_v': (1, 0.0, 0.9),  # images HSV-Value augmentation (fraction)
-            'degrees': (1, 0.0, 45.0),  # images rotation (+/- deg)
-            'translate': (1, 0.0, 0.9),  # images translation (+/- fraction)
-            'scale': (1, 0.0, 0.9),  # images scale (+/- gain)
-            'shear': (1, 0.0, 10.0),  # images shear (+/- deg)
-            'perspective': (0, 0.0, 0.001),  # images perspective (+/- fraction), range 0-0.001
-            'flipud': (1, 0.0, 1.0),  # images flip up-down (probability)
-            'fliplr': (0, 0.0, 1.0),  # images flip left-right (probability)
-            'mosaic': (1, 0.0, 1.0),  # images mixup (probability)
-            'mixup': (1, 0.0, 1.0),  # images mixup (probability)
+            'hsv_h': (1, 0.0, 0.1),  # image HSV-Hue augmentation (fraction)
+            'hsv_s': (1, 0.0, 0.9),  # image HSV-Saturation augmentation (fraction)
+            'hsv_v': (1, 0.0, 0.9),  # image HSV-Value augmentation (fraction)
+            'degrees': (1, 0.0, 45.0),  # image rotation (+/- deg)
+            'translate': (1, 0.0, 0.9),  # image translation (+/- fraction)
+            'scale': (1, 0.0, 0.9),  # image scale (+/- gain)
+            'shear': (1, 0.0, 10.0),  # image shear (+/- deg)
+            'perspective': (0, 0.0, 0.001),  # image perspective (+/- fraction), range 0-0.001
+            'flipud': (1, 0.0, 1.0),  # image flip up-down (probability)
+            'fliplr': (0, 0.0, 1.0),  # image flip left-right (probability)
+            'mosaic': (1, 0.0, 1.0),  # image mixup (probability)
+            'mixup': (1, 0.0, 1.0),  # image mixup (probability)
             'copy_paste': (1, 0.0, 1.0)}  # segment copy-paste (probability)
 
         with open(opt.hyp, errors='ignore') as f:

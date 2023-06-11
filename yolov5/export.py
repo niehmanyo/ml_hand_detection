@@ -207,21 +207,18 @@ def export_onnx(model, im, file, opset, dynamic, simplify, prefix=colorstr('ONNX
 @try_export
 def export_openvino(file, metadata, half, prefix=colorstr('OpenVINO:')):
     # YOLOv5 OpenVINO export
-    check_requirements('openvino-dev')  # requires openvino-dev: https://pypi.org/project/openvino-dev/
-    import openvino.inference_engine as ie
+    check_requirements('openvino-dev>=2022.3')  # requires openvino-dev: https://pypi.org/project/openvino-dev/
+    import openvino.runtime as ov  # noqa
+    from openvino.tools import mo  # noqa
 
-    LOGGER.info(f'\n{prefix} starting export with openvino {ie.__version__}...')
-    f = str(file).replace('.pt', f'_openvino_model{os.sep}')
+    LOGGER.info(f'\n{prefix} starting export with openvino {ov.__version__}...')
+    f = str(file).replace(file.suffix, f'_openvino_model{os.sep}')
+    f_onnx = file.with_suffix('.onnx')
+    f_ov = str(Path(f) / file.with_suffix('.xml').name)
 
-    args = [
-        'mo',
-        '--input_model',
-        str(file.with_suffix('.onnx')),
-        '--output_dir',
-        f,
-        '--data_type',
-        ('FP16' if half else 'FP32'),]
-    subprocess.run(args, check=True, env=os.environ)  # export
+    ov_model = mo.convert_model(f_onnx, model_name=file.stem, framework='onnx', compress_to_fp16=half)  # export
+
+    ov.serialize(ov_model, f_ov)  # save
     yaml_save(Path(f) / file.with_suffix('.yaml').name, metadata)  # add metadata.yaml
     return f, None
 
@@ -253,7 +250,7 @@ def export_coreml(model, im, file, int8, half, nms, prefix=colorstr('CoreML:')):
     if nms:
         model = iOSModel(model, im)
     ts = torch.jit.trace(model, im, strict=False)  # TorchScript model
-    ct_model = ct.convert(ts, inputs=[ct.ImageType('images', shape=im.shape, scale=1 / 255, bias=[0, 0, 0])])
+    ct_model = ct.convert(ts, inputs=[ct.ImageType('image', shape=im.shape, scale=1 / 255, bias=[0, 0, 0])])
     bits, mode = (8, 'kmeans_lut') if int8 else (16, 'linear') if half else (32, None)
     if bits < 32:
         if MACOS:  # quantization only supported on macOS
@@ -542,7 +539,7 @@ def pipeline_coreml(model, im, file, names, y, prefix=colorstr('CoreML Pipeline:
     if platform.system() == 'Darwin':
         img = Image.new('RGB', (w, h))  # img(192 width, 320 height)
         # img = torch.zeros((*opt.img_size, 3)).numpy()  # img size(320,192,3) iDetection
-        out = model.predict({'images': img})
+        out = model.predict({'image': img})
         out0_shape, out1_shape = out[out0.name].shape, out[out1.name].shape
     else:  # linux and windows can not run model.predict(), get sizes from pytorch output y
         s = tuple(y[0].shape)
@@ -564,11 +561,11 @@ def pipeline_coreml(model, im, file, names, y, prefix=colorstr('CoreML Pipeline:
     # s = [] # shapes
     # s.append(flexible_shape_utils.NeuralNetworkImageSize(320, 192))
     # s.append(flexible_shape_utils.NeuralNetworkImageSize(640, 384))  # (height, width)
-    # flexible_shape_utils.add_enumerated_image_sizes(spec, feature_name='images', sizes=s)
+    # flexible_shape_utils.add_enumerated_image_sizes(spec, feature_name='image', sizes=s)
     # r = flexible_shape_utils.NeuralNetworkImageSizeRange()  # shape ranges
     # r.add_height_range((192, 640))
     # r.add_width_range((192, 640))
-    # flexible_shape_utils.update_image_size_range(spec, feature_name='images', size_range=r)
+    # flexible_shape_utils.update_image_size_range(spec, feature_name='image', size_range=r)
 
     # Print
     print(spec.description)
@@ -614,7 +611,7 @@ def pipeline_coreml(model, im, file, names, y, prefix=colorstr('CoreML Pipeline:
     nms_model = ct.models.MLModel(nms_spec)
 
     # 4. Pipeline models together
-    pipeline = ct.models.pipeline.Pipeline(input_features=[('images', ct.models.datatypes.Array(3, ny, nx)),
+    pipeline = ct.models.pipeline.Pipeline(input_features=[('image', ct.models.datatypes.Array(3, ny, nx)),
                                                            ('iouThreshold', ct.models.datatypes.Double()),
                                                            ('confidenceThreshold', ct.models.datatypes.Double())],
                                            output_features=['confidence', 'coordinates'])
@@ -640,12 +637,12 @@ def pipeline_coreml(model, im, file, names, y, prefix=colorstr('CoreML Pipeline:
     # Save the model
     f = file.with_suffix('.mlmodel')  # filename
     model = ct.models.MLModel(pipeline.spec)
-    model.input_description['images'] = 'Input images'
+    model.input_description['image'] = 'Input image'
     model.input_description['iouThreshold'] = f'(optional) IOU Threshold override (default: {nms.iouThreshold})'
     model.input_description['confidenceThreshold'] = \
         f'(optional) Confidence Threshold override (default: {nms.confidenceThreshold})'
     model.output_description['confidence'] = 'Boxes × Class confidence (see user-defined metadata "classes")'
-    model.output_description['coordinates'] = 'Boxes × [x, y, width, height] (relative to images size)'
+    model.output_description['coordinates'] = 'Boxes × [x, y, width, height] (relative to image size)'
     model.save(f)  # pipelined
     print(f'{prefix} pipeline success ({time.time() - t:.2f}s), saved as {f} ({file_size(f):.1f} MB)')
 
@@ -654,7 +651,7 @@ def pipeline_coreml(model, im, file, names, y, prefix=colorstr('CoreML Pipeline:
 def run(
         data=ROOT / 'data/coco128.yaml',  # 'dataset.yaml path'
         weights=ROOT / 'yolov5s.pt',  # weights path
-        imgsz=(640, 640),  # images (height, width)
+        imgsz=(640, 640),  # image (height, width)
         batch_size=1,  # batch size
         device='cpu',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         include=('torchscript', 'onnx'),  # include formats
@@ -698,7 +695,7 @@ def run(
     # Input
     gs = int(max(model.stride))  # grid size (max stride)
     imgsz = [check_img_size(x, gs) for x in imgsz]  # verify img_size are gs-multiples
-    im = torch.zeros(batch_size, 3, *imgsz).to(device)  # images size(1,3,320,192) BCHW iDetection
+    im = torch.zeros(batch_size, 3, *imgsz).to(device)  # image size(1,3,320,192) BCHW iDetection
 
     # Update model
     model.eval()
@@ -779,7 +776,7 @@ def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='dataset.yaml path')
     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolov5s.pt', help='model.pt path(s)')
-    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640, 640], help='images (h, w)')
+    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640, 640], help='image (h, w)')
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--half', action='store_true', help='FP16 half-precision export')

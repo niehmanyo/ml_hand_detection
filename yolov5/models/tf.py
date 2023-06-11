@@ -115,7 +115,7 @@ class TFDWConvTranspose2d(keras.layers.Layer):
         # ch_in, ch_out, weights, kernel, stride, padding, groups
         super().__init__()
         assert c1 == c2, f'TFDWConv() output={c2} must be equal to input={c1} channels'
-        assert k == 4 and p1 == 1, 'TFDWConv() only annotations for k=4 and p1=1'
+        assert k == 4 and p1 == 1, 'TFDWConv() only valid for k=4 and p1=1'
         weight, bias = w.weight.permute(2, 3, 1, 0).numpy(), w.bias.numpy()
         self.c1 = c1
         self.conv = [
@@ -569,13 +569,13 @@ def run(
         dynamic=False,  # dynamic batch size
 ):
     # PyTorch model
-    im = torch.zeros((batch_size, 3, *imgsz))  # BCHW images
+    im = torch.zeros((batch_size, 3, *imgsz))  # BCHW image
     model = attempt_load(weights, device=torch.device('cpu'), inplace=True, fuse=False)
     _ = model(im)  # inference
     model.info()
 
     # TensorFlow model
-    im = tf.zeros((batch_size, *imgsz, 3))  # BHWC images
+    im = tf.zeros((batch_size, *imgsz, 3))  # BHWC image
     tf_model = TFModel(cfg=model.yaml, model=model, nc=model.nc, imgsz=imgsz)
     _ = tf_model.predict(im)  # inference
 

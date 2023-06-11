@@ -32,7 +32,7 @@ def get_args(known=False):
     parser.add_argument('--hyp', type=str, default=ROOT / 'data/hyps/hyp.scratch-low.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=300, help='total training epochs')
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs, -1 for autobatch')
-    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val images size (pixels)')
+    parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='train, val image size (pixels)')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
@@ -42,7 +42,7 @@ def get_args(known=False):
     parser.add_argument('--evolve', type=int, nargs='?', const=300, help='evolve hyperparameters for x generations')
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')
     parser.add_argument('--cache', type=str, nargs='?', const='ram', help='--cache images in "ram" (default) or "disk"')
-    parser.add_argument('--images-weights', action='store_true', help='use weighted images selection for training')
+    parser.add_argument('--image-weights', action='store_true', help='use weighted image selection for training')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--multi-scale', action='store_true', help='vary img-size +/- 50%%')
     parser.add_argument('--single-cls', action='store_true', help='train multi-class data as single-class')
@@ -64,7 +64,7 @@ def get_args(known=False):
     # Weights & Biases arguments
     parser.add_argument('--entity', default=None, help='W&B: Entity')
     parser.add_argument('--upload_dataset', nargs='?', const=True, default=False, help='W&B: Upload data, "val" option')
-    parser.add_argument('--bbox_interval', type=int, default=-1, help='W&B: Set bounding-box images logging interval')
+    parser.add_argument('--bbox_interval', type=int, default=-1, help='W&B: Set bounding-box image logging interval')
     parser.add_argument('--artifact_alias', type=str, default='latest', help='W&B: Version of dataset artifact to use')
 
     # Comet Arguments

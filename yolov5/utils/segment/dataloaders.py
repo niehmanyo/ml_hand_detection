@@ -120,7 +120,7 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
                 img, labels, segments = mixup(img, labels, segments, *self.load_mosaic(random.randint(0, self.n - 1)))
 
         else:
-            # Load images
+            # Load image
             img, (h0, w0), (h, w) = self.load_image(index)
 
             # Letterbox
@@ -153,7 +153,7 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
                                                            shear=hyp['shear'],
                                                            perspective=hyp['perspective'])
 
-        nl = len(labels)  # number of annotations
+        nl = len(labels)  # number of labels
         if nl:
             labels[:, 1:5] = xyxy2xywhn(labels[:, 1:5], w=img.shape[1], h=img.shape[0], clip=True, eps=1e-3)
             if self.overlap:
@@ -193,7 +193,7 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
                     labels[:, 1] = 1 - labels[:, 1]
                     masks = torch.flip(masks, dims=[2])
 
-            # Cutouts  # annotations = cutout(img, annotations, p=0.5)
+            # Cutouts  # labels = cutout(img, labels, p=0.5)
 
         labels_out = torch.zeros((nl, 6))
         if nl:
@@ -206,22 +206,22 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
         return (torch.from_numpy(img), labels_out, self.im_files[index], shapes, masks)
 
     def load_mosaic(self, index):
-        # YOLOv5 4-mosaic loader. Loads 1 images + 3 random images into a 4-images mosaic
+        # YOLOv5 4-mosaic loader. Loads 1 image + 3 random images into a 4-image mosaic
         labels4, segments4 = [], []
         s = self.img_size
         yc, xc = (int(random.uniform(-x, 2 * s + x)) for x in self.mosaic_border)  # mosaic center x, y
 
-        # 3 additional images indices
-        indices = [index] + random.choices(self.indices, k=3)  # 3 additional images indices
+        # 3 additional image indices
+        indices = [index] + random.choices(self.indices, k=3)  # 3 additional image indices
         for i, index in enumerate(indices):
-            # Load images
+            # Load image
             img, _, (h, w) = self.load_image(index)
 
             # place img in img4
             if i == 0:  # top left
-                img4 = np.full((s * 2, s * 2, img.shape[2]), 114, dtype=np.uint8)  # base images with 4 tiles
-                x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc  # xmin, ymin, xmax, ymax (large images)
-                x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h  # xmin, ymin, xmax, ymax (small images)
+                img4 = np.full((s * 2, s * 2, img.shape[2]), 114, dtype=np.uint8)  # base image with 4 tiles
+                x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc  # xmin, ymin, xmax, ymax (large image)
+                x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h  # xmin, ymin, xmax, ymax (small image)
             elif i == 1:  # top right
                 x1a, y1a, x2a, y2a = xc, max(yc - h, 0), min(xc + w, s * 2), yc
                 x1b, y1b, x2b, y2b = 0, h - (y2a - y1a), min(w, x2a - x1a), h
@@ -244,7 +244,7 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
             labels4.append(labels)
             segments4.extend(segments)
 
-        # Concat/clip annotations
+        # Concat/clip labels
         labels4 = np.concatenate(labels4, 0)
         for x in (labels4[:, 1:], *segments4):
             np.clip(x, 0, 2 * s, out=x)  # clip when using random_perspective()
@@ -268,14 +268,14 @@ class LoadImagesAndLabelsAndMasks(LoadImagesAndLabels):  # for training/testing
         img, label, path, shapes, masks = zip(*batch)  # transposed
         batched_masks = torch.cat(masks, 0)
         for i, l in enumerate(label):
-            l[:, 0] = i  # add target images index for build_targets()
+            l[:, 0] = i  # add target image index for build_targets()
         return torch.stack(img, 0), torch.cat(label, 0), path, shapes, batched_masks
 
 
 def polygon2mask(img_size, polygons, color=1, downsample_ratio=1):
     """
     Args:
-        img_size (tuple): The images size.
+        img_size (tuple): The image size.
         polygons (np.ndarray): [N, M], N is the number of polygons,
             M is the number of points(Be divided by 2).
     """
@@ -295,7 +295,7 @@ def polygon2mask(img_size, polygons, color=1, downsample_ratio=1):
 def polygons2masks(img_size, polygons, color, downsample_ratio=1):
     """
     Args:
-        img_size (tuple): The images size.
+        img_size (tuple): The image size.
         polygons (list[np.ndarray]): each polygon is [N, M],
             N is the number of polygons,
             M is the number of points(Be divided by 2).

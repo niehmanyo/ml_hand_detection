@@ -18,6 +18,7 @@ import pandas as pd
 import seaborn as sn
 import torch
 from PIL import Image, ImageDraw, ImageFont
+from scipy.ndimage.filters import gaussian_filter1d
 
 from utils import TryExcept, threaded
 from utils.general import (CONFIG_DIR, FONT, LOGGER, check_font, check_requirements, clip_boxes, increment_path,
@@ -72,7 +73,7 @@ class Annotator:
     # YOLOv5 Annotator for train/val mosaics and jpgs and detect/hub inference annotations
     def __init__(self, im, line_width=None, font_size=None, font='Arial.ttf', pil=False, example='abc'):
         assert im.data.contiguous, 'Image not contiguous. Apply np.ascontiguousarray(im) to Annotator() input images.'
-        non_ascii = not is_ascii(example)  # non-latin annotations, i.e. asian, arabic, cyrillic
+        non_ascii = not is_ascii(example)  # non-latin labels, i.e. asian, arabic, cyrillic
         self.pil = pil or non_ascii
         if self.pil:  # use PIL
             self.im = im if isinstance(im, Image.Image) else Image.fromarray(im)
@@ -84,7 +85,7 @@ class Annotator:
         self.lw = line_width or max(round(sum(im.shape) / 2 * 0.003), 2)  # line width
 
     def box_label(self, box, label='', color=(128, 128, 128), txt_color=(255, 255, 255)):
-        # Add one xyxy box to images with label
+        # Add one xyxy box to image with label
         if self.pil or not is_ascii(label):
             self.draw.rectangle(box, width=self.lw, outline=color)  # box
             if label:
@@ -146,11 +147,11 @@ class Annotator:
             self.fromarray(self.im)
 
     def rectangle(self, xy, fill=None, outline=None, width=1):
-        # Add rectangle to images (PIL-only)
+        # Add rectangle to image (PIL-only)
         self.draw.rectangle(xy, fill, outline, width)
 
     def text(self, xy, text, txt_color=(255, 255, 255), anchor='top'):
-        # Add text to images (PIL-only)
+        # Add text to image (PIL-only)
         if anchor == 'bottom':  # start y from font bottom
             w, h = self.font.getsize(text)  # text width, height
             xy[1] += 1 - h
@@ -162,7 +163,7 @@ class Annotator:
         self.draw = ImageDraw.Draw(self.im)
 
     def result(self):
-        # Return annotated images as array
+        # Return annotated image as array
         return np.asarray(self.im)
 
 
@@ -195,7 +196,7 @@ def feature_visualization(x, module_type, stage, n=32, save_dir=Path('runs/detec
 
 
 def hist2d(x, y, n=100):
-    # 2d histogram used in annotations.png and evolve.png
+    # 2d histogram used in labels.png and evolve.png
     xedges, yedges = np.linspace(x.min(), x.max(), n), np.linspace(y.min(), y.max(), n)
     hist, xedges, yedges = np.histogram2d(x, y, (xedges, yedges))
     xidx = np.clip(np.digitize(x, xedges) - 1, 0, hist.shape[0] - 1)
@@ -228,14 +229,14 @@ def output_to_target(output, max_det=300):
 
 @threaded
 def plot_images(images, targets, paths=None, fname='images.jpg', names=None):
-    # Plot images grid with annotations
+    # Plot image grid with labels
     if isinstance(images, torch.Tensor):
         images = images.cpu().float().numpy()
     if isinstance(targets, torch.Tensor):
         targets = targets.cpu().numpy()
 
-    max_size = 1920  # max images size
-    max_subplots = 16  # max images subplots, i.e. 4x4
+    max_size = 1920  # max image size
+    max_subplots = 16  # max image subplots, i.e. 4x4
     bs, _, h, w = images.shape  # batch size, _, height, width
     bs = min(bs, max_subplots)  # limit plot images
     ns = np.ceil(bs ** 0.5)  # number of subplots (square)
@@ -267,17 +268,17 @@ def plot_images(images, targets, paths=None, fname='images.jpg', names=None):
         if paths:
             annotator.text((x + 5, y + 5), text=Path(paths[i]).name[:40], txt_color=(220, 220, 220))  # filenames
         if len(targets) > 0:
-            ti = targets[targets[:, 0] == i]  # images targets
+            ti = targets[targets[:, 0] == i]  # image targets
             boxes = xywh2xyxy(ti[:, 2:6]).T
             classes = ti[:, 1].astype('int')
-            labels = ti.shape[1] == 6  # annotations if no conf column
+            labels = ti.shape[1] == 6  # labels if no conf column
             conf = None if labels else ti[:, 6]  # check for confidence presence (label vs pred)
 
             if boxes.shape[1]:
                 if boxes.max() <= 1.01:  # if normalized with tolerance 0.01
                     boxes[[0, 2]] *= w  # scale to pixels
                     boxes[[1, 3]] *= h
-                elif scale < 1:  # absolute coords need scale if images scales
+                elif scale < 1:  # absolute coords need scale if image scales
                     boxes *= scale
             boxes[[0, 2]] += x
             boxes[[1, 3]] += y
@@ -385,8 +386,8 @@ def plot_val_study(file='', dir='', x=None):  # from utils.plots import *; plot_
 
 @TryExcept()  # known issue https://github.com/ultralytics/yolov5/issues/5395
 def plot_labels(labels, names=(), save_dir=Path('')):
-    # plot dataset annotations
-    LOGGER.info(f"Plotting annotations to {save_dir / 'annotations.jpg'}... ")
+    # plot dataset labels
+    LOGGER.info(f"Plotting labels to {save_dir / 'labels.jpg'}... ")
     c, b = labels[:, 0], labels[:, 1:].transpose()  # classes, boxes
     nc = int(c.max() + 1)  # number of classes
     x = pd.DataFrame(b.transpose(), columns=['x', 'y', 'width', 'height'])
@@ -396,7 +397,7 @@ def plot_labels(labels, names=(), save_dir=Path('')):
     plt.savefig(save_dir / 'labels_correlogram.jpg', dpi=200)
     plt.close()
 
-    # matplotlib annotations
+    # matplotlib labels
     matplotlib.use('svg')  # faster
     ax = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)[1].ravel()
     y = ax[0].hist(c, bins=np.linspace(0, nc, nc + 1) - 0.5, rwidth=0.8)
@@ -424,13 +425,13 @@ def plot_labels(labels, names=(), save_dir=Path('')):
         for s in ['top', 'right', 'left', 'bottom']:
             ax[a].spines[s].set_visible(False)
 
-    plt.savefig(save_dir / 'annotations.jpg', dpi=200)
+    plt.savefig(save_dir / 'labels.jpg', dpi=200)
     matplotlib.use('Agg')
     plt.close()
 
 
 def imshow_cls(im, labels=None, pred=None, names=None, nmax=25, verbose=False, f=Path('images.jpg')):
-    # Show classification images grid with annotations (optional) and predictions (optional)
+    # Show classification image grid with labels (optional) and predictions (optional)
     from utils.augmentations import denormalize
 
     names = names or [f'class{i}' for i in range(1000)]
@@ -500,7 +501,8 @@ def plot_results(file='path/to/results.csv', dir=''):
             for i, j in enumerate([1, 2, 3, 4, 5, 8, 9, 10, 6, 7]):
                 y = data.values[:, j].astype('float')
                 # y[y == 0] = np.nan  # don't show zero values
-                ax[i].plot(x, y, marker='.', label=f.stem, linewidth=2, markersize=8)
+                ax[i].plot(x, y, marker='.', label=f.stem, linewidth=2, markersize=8)  # actual results
+                ax[i].plot(x, gaussian_filter1d(y, sigma=3), ':', label='smooth', linewidth=2)  # smoothing line
                 ax[i].set_title(s[j], fontsize=12)
                 # if j in [8, 9, 10]:  # share train and val loss y axes
                 #     ax[i].get_shared_y_axes().join(ax[i], ax[i - 5])
@@ -512,7 +514,7 @@ def plot_results(file='path/to/results.csv', dir=''):
 
 
 def profile_idetection(start=0, stop=0, labels=(), save_dir=''):
-    # Plot iDetection '*.txt' per-images logs. from utils.plots import *; profile_idetection()
+    # Plot iDetection '*.txt' per-image logs. from utils.plots import *; profile_idetection()
     ax = plt.subplots(2, 4, figsize=(12, 6), tight_layout=True)[1].ravel()
     s = ['Images', 'Free Storage (GB)', 'RAM Usage (GB)', 'Battery', 'dt_raw (ms)', 'dt_smooth (ms)', 'real-world FPS']
     files = list(Path(save_dir).glob('frames*.txt'))
@@ -543,7 +545,7 @@ def profile_idetection(start=0, stop=0, labels=(), save_dir=''):
 
 
 def save_one_box(xyxy, im, file=Path('im.jpg'), gain=1.02, pad=10, square=False, BGR=False, save=True):
-    # Save images crop as {file} with crop size multiple {gain} and {pad} pixels. Save and/or return crop
+    # Save image crop as {file} with crop size multiple {gain} and {pad} pixels. Save and/or return crop
     xyxy = torch.tensor(xyxy).view(-1, 4)
     b = xyxy2xywh(xyxy)  # boxes
     if square:

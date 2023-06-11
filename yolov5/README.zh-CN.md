@@ -27,7 +27,7 @@ YOLOv5 🚀 是世界上最受欢迎的视觉 AI，代表<a href="https://ultral
   <a href="https://github.com/ultralytics" style="text-decoration:none;">
     <img src="https://github.com/ultralytics/assets/raw/main/social/logo-social-github.png" width="2%" alt="" /></a>
   <img src="https://github.com/ultralytics/assets/raw/main/social/logo-transparent.png" width="2%" alt="" />
-  <a href="https://www.linkedin.com/company/ultralytics" style="text-decoration:none;">
+  <a href="https://www.linkedin.com/company/ultralytics/" style="text-decoration:none;">
     <img src="https://github.com/ultralytics/assets/raw/main/social/logo-social-linkedin.png" width="2%" alt="" /></a>
   <img src="https://github.com/ultralytics/assets/raw/main/social/logo-transparent.png" width="2%" alt="" />
   <a href="https://twitter.com/ultralytics" style="text-decoration:none;">
@@ -114,7 +114,7 @@ results.print()  # or .show(), .save(), .crop(), .pandas(), etc.
 
 ```bash
 python detect.py --weights yolov5s.pt --source 0                               # webcam
-                                               img.jpg                         # images
+                                               img.jpg                         # image
                                                vid.mp4                         # video
                                                screen                          # screenshot
                                                path/                           # directory
@@ -447,7 +447,7 @@ python export.py --weights yolov5s-cls.pt resnet50.pt efficientnet_b0.pt --inclu
 
 我们喜欢您的意见或建议！我们希望尽可能简单和透明地为 YOLOv5 做出贡献。请看我们的 [投稿指南](https://docs.ultralytics.com/help/contributing/)，并填写 [YOLOv5调查](https://ultralytics.com/survey?utm_source=github&utm_medium=social&utm_campaign=Survey) 向我们发送您的体验反馈。感谢我们所有的贡献者！
 
-<!-- SVG images from https://opencollective.com/ultralytics/contributors.svg?width=990 -->
+<!-- SVG image from https://opencollective.com/ultralytics/contributors.svg?width=990 -->
 
 <a href="https://github.com/ultralytics/yolov5/graphs/contributors">
 <img src="https://github.com/ultralytics/assets/raw/main/im/image-contributors.png" /></a>
@@ -468,7 +468,7 @@ YOLOv5 在两种不同的 License 下可用：
   <a href="https://github.com/ultralytics" style="text-decoration:none;">
     <img src="https://github.com/ultralytics/assets/raw/main/social/logo-social-github.png" width="3%" alt="" /></a>
   <img src="https://github.com/ultralytics/assets/raw/main/social/logo-transparent.png" width="3%" alt="" />
-  <a href="https://www.linkedin.com/company/ultralytics" style="text-decoration:none;">
+  <a href="https://www.linkedin.com/company/ultralytics/" style="text-decoration:none;">
     <img src="https://github.com/ultralytics/assets/raw/main/social/logo-social-linkedin.png" width="3%" alt="" /></a>
   <img src="https://github.com/ultralytics/assets/raw/main/social/logo-transparent.png" width="3%" alt="" />
   <a href="https://twitter.com/ultralytics" style="text-decoration:none;">

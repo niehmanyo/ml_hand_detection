@@ -51,7 +51,7 @@ class ComputeLoss:
 
         # Losses
         for i, pi in enumerate(p):  # layer index, layer predictions
-            b, a, gj, gi = indices[i]  # images, anchor, gridy, gridx
+            b, a, gj, gi = indices[i]  # image, anchor, gridy, gridx
             tobj = torch.zeros(pi.shape[:4], dtype=pi.dtype, device=self.device)  # target obj
 
             n = b.shape[0]  # number of targets
@@ -109,13 +109,13 @@ class ComputeLoss:
         return loss * bs, torch.cat((lbox, lseg, lobj, lcls)).detach()
 
     def single_mask_loss(self, gt_mask, pred, proto, xyxy, area):
-        # Mask loss for one images
+        # Mask loss for one image
         pred_mask = (pred @ proto.view(self.nm, -1)).view(-1, *proto.shape[1:])  # (n,32) @ (32,80,80) -> (n,80,80)
         loss = F.binary_cross_entropy_with_logits(pred_mask, gt_mask, reduction='none')
         return (crop_mask(loss, xyxy).mean(dim=(1, 2)) / area).mean()
 
     def build_targets(self, p, targets):
-        # Build targets for compute_loss(), input targets(images,class,x,y,w,h)
+        # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
         na, nt = self.na, targets.shape[0]  # number of anchors, targets
         tcls, tbox, indices, anch, tidxs, xywhn = [], [], [], [], [], []
         gain = torch.ones(8, device=self.device)  # normalized to gridspace gain
@@ -124,7 +124,7 @@ class ComputeLoss:
             batch = p[0].shape[0]
             ti = []
             for i in range(batch):
-                num = (targets[:, 0] == i).sum()  # find number of targets of each images
+                num = (targets[:, 0] == i).sum()  # find number of targets of each image
                 ti.append(torch.arange(num, device=self.device).float().view(1, num).repeat(na, 1) + 1)  # (na, num)
             ti = torch.cat(ti, 1)  # (na, nt)
         else:
@@ -169,13 +169,13 @@ class ComputeLoss:
                 offsets = 0
 
             # Define
-            bc, gxy, gwh, at = t.chunk(4, 1)  # (images, class), grid xy, grid wh, anchors
-            (a, tidx), (b, c) = at.long().T, bc.long().T  # anchors, images, class
+            bc, gxy, gwh, at = t.chunk(4, 1)  # (image, class), grid xy, grid wh, anchors
+            (a, tidx), (b, c) = at.long().T, bc.long().T  # anchors, image, class
             gij = (gxy - offsets).long()
             gi, gj = gij.T  # grid indices
 
             # Append
-            indices.append((b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # images, anchor, grid
+            indices.append((b, a, gj.clamp_(0, shape[2] - 1), gi.clamp_(0, shape[3] - 1)))  # image, anchor, grid
             tbox.append(torch.cat((gxy - gij, gwh), 1))  # box
             anch.append(anchors[a])  # anchors
             tcls.append(c)  # class

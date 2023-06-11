@@ -37,7 +37,7 @@ from utils.torch_utils import torch_distributed_zero_first
 
 # Parameters
 HELP_URL = 'See https://docs.ultralytics.com/yolov5/tutorials/train_custom_data'
-IMG_FORMATS = 'bmp', 'dng', 'jpeg', 'jpg', 'mpo', 'png', 'tif', 'tiff', 'webp', 'pfm'  # include images suffixes
+IMG_FORMATS = 'bmp', 'dng', 'jpeg', 'jpg', 'mpo', 'png', 'tif', 'tiff', 'webp', 'pfm'  # include image suffixes
 VID_FORMATS = 'asf', 'avi', 'gif', 'm4v', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'ts', 'wmv'  # include video suffixes
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
 RANK = int(os.getenv('RANK', -1))
@@ -69,11 +69,11 @@ def exif_size(img):
 
 def exif_transpose(image):
     """
-    Transpose a PIL images accordingly if it has an EXIF Orientation tag.
+    Transpose a PIL image accordingly if it has an EXIF Orientation tag.
     Inplace version of https://github.com/python-pillow/Pillow/blob/master/src/PIL/ImageOps.py exif_transpose()
 
-    :param image: The images to transpose.
-    :return: An images.
+    :param image: The image to transpose.
+    :return: An image.
     """
     exif = image.getexif()
     orientation = exif.get(0x0112, 1)  # default 1
@@ -237,7 +237,7 @@ class LoadScreenshots:
 
 
 class LoadImages:
-    # YOLOv5 images/video dataloader, i.e. `python detect.py --source images.jpg/vid.mp4`
+    # YOLOv5 image/video dataloader, i.e. `python detect.py --source image.jpg/vid.mp4`
     def __init__(self, path, img_size=640, stride=32, auto=True, transforms=None, vid_stride=1):
         if isinstance(path, str) and Path(path).suffix == '.txt':  # *.txt file with img/vid/dir on each line
             path = Path(path).read_text().rsplit()
@@ -262,7 +262,7 @@ class LoadImages:
         self.files = images + videos
         self.nf = ni + nv  # number of files
         self.video_flag = [False] * ni + [True] * nv
-        self.mode = 'images'
+        self.mode = 'image'
         self.auto = auto
         self.transforms = transforms  # optional
         self.vid_stride = vid_stride  # video frame-rate stride
@@ -302,11 +302,11 @@ class LoadImages:
             s = f'video {self.count + 1}/{self.nf} ({self.frame}/{self.frames}) {path}: '
 
         else:
-            # Read images
+            # Read image
             self.count += 1
             im0 = cv2.imread(path)  # BGR
             assert im0 is not None, f'Image Not Found {path}'
-            s = f'images {self.count}/{self.nf} {path}: '
+            s = f'image {self.count}/{self.nf} {path}: '
 
         if self.transforms:
             im = self.transforms(im0)  # transforms
@@ -426,14 +426,14 @@ class LoadStreams:
 
 
 def img2label_paths(img_paths):
-    # Define label paths as a function of images paths
-    sa, sb = f'{os.sep}images{os.sep}', f'{os.sep}annotations{os.sep}'  # /images/, /annotations/ substrings
+    # Define label paths as a function of image paths
+    sa, sb = f'{os.sep}images{os.sep}', f'{os.sep}labels{os.sep}'  # /images/, /labels/ substrings
     return [sb.join(x.rsplit(sa, 1)).rsplit('.', 1)[0] + '.txt' for x in img_paths]
 
 
 class LoadImagesAndLabels(Dataset):
-    # YOLOv5 train_loader/val_loader, loads images and annotations for training and validation
-    cache_version = 0.6  # dataset annotations *.cache version
+    # YOLOv5 train_loader/val_loader, loads images and labels for training and validation
+    cache_version = 0.6  # dataset labels *.cache version
     rand_interp_methods = [cv2.INTER_NEAREST, cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_AREA, cv2.INTER_LANCZOS4]
 
     def __init__(self,
@@ -462,7 +462,7 @@ class LoadImagesAndLabels(Dataset):
         self.albumentations = Albumentations(size=img_size) if augment else None
 
         try:
-            f = []  # images files
+            f = []  # image files
             for p in path if isinstance(path, list) else [path]:
                 p = Path(p)  # os-agnostic
                 if p.is_dir():  # dir
@@ -483,7 +483,7 @@ class LoadImagesAndLabels(Dataset):
             raise Exception(f'{prefix}Error loading data from {path}: {e}\n{HELP_URL}') from e
 
         # Check cache
-        self.label_files = img2label_paths(self.im_files)  # annotations
+        self.label_files = img2label_paths(self.im_files)  # labels
         cache_path = (p if p.is_file() else Path(self.label_files[0]).parent).with_suffix('.cache')
         try:
             cache, exists = np.load(cache_path, allow_pickle=True).item(), True  # load dict
@@ -499,13 +499,13 @@ class LoadImagesAndLabels(Dataset):
             tqdm(None, desc=prefix + d, total=n, initial=n, bar_format=TQDM_BAR_FORMAT)  # display cache results
             if cache['msgs']:
                 LOGGER.info('\n'.join(cache['msgs']))  # display warnings
-        assert nf > 0 or not augment, f'{prefix}No annotations found in {cache_path}, can not start training. {HELP_URL}'
+        assert nf > 0 or not augment, f'{prefix}No labels found in {cache_path}, can not start training. {HELP_URL}'
 
         # Read cache
         [cache.pop(k) for k in ('hash', 'version', 'msgs')]  # remove items
         labels, shapes, self.segments = zip(*cache.values())
-        nl = len(np.concatenate(labels, 0))  # number of annotations
-        assert nl > 0 or not augment, f'{prefix}All annotations empty in {cache_path}, can not start training. {HELP_URL}'
+        nl = len(np.concatenate(labels, 0))  # number of labels
+        assert nl > 0 or not augment, f'{prefix}All labels empty in {cache_path}, can not start training. {HELP_URL}'
         self.labels = list(labels)
         self.shapes = np.array(shapes)
         self.im_files = list(cache.keys())  # update
@@ -525,12 +525,12 @@ class LoadImagesAndLabels(Dataset):
         n = len(self.shapes)  # number of images
         bi = np.floor(np.arange(n) / batch_size).astype(int)  # batch index
         nb = bi[-1] + 1  # number of batches
-        self.batch = bi  # batch index of images
+        self.batch = bi  # batch index of image
         self.n = n
         self.indices = range(n)
 
-        # Update annotations
-        include_class = []  # filter annotations to include only these classes (optional)
+        # Update labels
+        include_class = []  # filter labels to include only these classes (optional)
         self.segments = list(self.segments)
         include_class_array = np.array(include_class).reshape(1, -1)
         for i, (label, segment) in enumerate(zip(self.labels, self.segments)):
@@ -555,7 +555,7 @@ class LoadImagesAndLabels(Dataset):
             self.shapes = s[irect]  # wh
             ar = ar[irect]
 
-            # Set training images shapes
+            # Set training image shapes
             shapes = [[1, 1]] * nb
             for i in range(nb):
                 ari = ar[bi == i]
@@ -588,11 +588,11 @@ class LoadImagesAndLabels(Dataset):
             pbar.close()
 
     def check_cache_ram(self, safety_margin=0.1, prefix=''):
-        # Check images caching requirements vs available memory
+        # Check image caching requirements vs available memory
         b, gb = 0, 1 << 30  # bytes of cached images, bytes per gigabytes
         n = min(self.n, 30)  # extrapolate from 30 random images
         for _ in range(n):
-            im = cv2.imread(random.choice(self.im_files))  # sample images
+            im = cv2.imread(random.choice(self.im_files))  # sample image
             ratio = self.img_size / max(im.shape[0], im.shape[1])  # max(h, w)  # ratio
             b += im.nbytes * ratio ** 2
         mem_required = b * self.n / n  # GB required to cache dataset into RAM
@@ -604,8 +604,8 @@ class LoadImagesAndLabels(Dataset):
                         f"{'caching images ✅' if cache else 'not caching images ⚠️'}")
         return cache
 
-    def cache_labels(self, path=Path('./annotations.cache'), prefix=''):
-        # Cache dataset annotations, check images and read shapes
+    def cache_labels(self, path=Path('./labels.cache'), prefix=''):
+        # Cache dataset labels, check images and read shapes
         x = {}  # dict
         nm, nf, ne, nc, msgs = 0, 0, 0, 0, []  # number missing, found, empty, corrupt, messages
         desc = f'{prefix}Scanning {path.parent / path.stem}...'
@@ -629,7 +629,7 @@ class LoadImagesAndLabels(Dataset):
         if msgs:
             LOGGER.info('\n'.join(msgs))
         if nf == 0:
-            LOGGER.warning(f'{prefix}WARNING ⚠️ No annotations found in {path}. {HELP_URL}')
+            LOGGER.warning(f'{prefix}WARNING ⚠️ No labels found in {path}. {HELP_URL}')
         x['hash'] = get_hash(self.label_files + self.im_files)
         x['results'] = nf, nm, ne, nc, len(self.im_files)
         x['msgs'] = msgs  # warnings
@@ -666,7 +666,7 @@ class LoadImagesAndLabels(Dataset):
                 img, labels = mixup(img, labels, *self.load_mosaic(random.randint(0, self.n - 1)))
 
         else:
-            # Load images
+            # Load image
             img, (h0, w0), (h, w) = self.load_image(index)
 
             # Letterbox
@@ -687,7 +687,7 @@ class LoadImagesAndLabels(Dataset):
                                                  shear=hyp['shear'],
                                                  perspective=hyp['perspective'])
 
-        nl = len(labels)  # number of annotations
+        nl = len(labels)  # number of labels
         if nl:
             labels[:, 1:5] = xyxy2xywhn(labels[:, 1:5], w=img.shape[1], h=img.shape[0], clip=True, eps=1E-3)
 
@@ -712,8 +712,8 @@ class LoadImagesAndLabels(Dataset):
                     labels[:, 1] = 1 - labels[:, 1]
 
             # Cutouts
-            # annotations = cutout(img, annotations, p=0.5)
-            # nl = len(annotations)  # update after cutout
+            # labels = cutout(img, labels, p=0.5)
+            # nl = len(labels)  # update after cutout
 
         labels_out = torch.zeros((nl, 6))
         if nl:
@@ -726,12 +726,12 @@ class LoadImagesAndLabels(Dataset):
         return torch.from_numpy(img), labels_out, self.im_files[index], shapes
 
     def load_image(self, i):
-        # Loads 1 images from dataset index 'i', returns (im, original hw, resized hw)
+        # Loads 1 image from dataset index 'i', returns (im, original hw, resized hw)
         im, f, fn = self.ims[i], self.im_files[i], self.npy_files[i],
         if im is None:  # not cached in RAM
             if fn.exists():  # load npy
                 im = np.load(fn)
-            else:  # read images
+            else:  # read image
                 im = cv2.imread(f)  # BGR
                 assert im is not None, f'Image Not Found {f}'
             h0, w0 = im.shape[:2]  # orig hw
@@ -743,27 +743,27 @@ class LoadImagesAndLabels(Dataset):
         return self.ims[i], self.im_hw0[i], self.im_hw[i]  # im, hw_original, hw_resized
 
     def cache_images_to_disk(self, i):
-        # Saves an images as an *.npy file for faster loading
+        # Saves an image as an *.npy file for faster loading
         f = self.npy_files[i]
         if not f.exists():
             np.save(f.as_posix(), cv2.imread(self.im_files[i]))
 
     def load_mosaic(self, index):
-        # YOLOv5 4-mosaic loader. Loads 1 images + 3 random images into a 4-images mosaic
+        # YOLOv5 4-mosaic loader. Loads 1 image + 3 random images into a 4-image mosaic
         labels4, segments4 = [], []
         s = self.img_size
         yc, xc = (int(random.uniform(-x, 2 * s + x)) for x in self.mosaic_border)  # mosaic center x, y
-        indices = [index] + random.choices(self.indices, k=3)  # 3 additional images indices
+        indices = [index] + random.choices(self.indices, k=3)  # 3 additional image indices
         random.shuffle(indices)
         for i, index in enumerate(indices):
-            # Load images
+            # Load image
             img, _, (h, w) = self.load_image(index)
 
             # place img in img4
             if i == 0:  # top left
-                img4 = np.full((s * 2, s * 2, img.shape[2]), 114, dtype=np.uint8)  # base images with 4 tiles
-                x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc  # xmin, ymin, xmax, ymax (large images)
-                x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h  # xmin, ymin, xmax, ymax (small images)
+                img4 = np.full((s * 2, s * 2, img.shape[2]), 114, dtype=np.uint8)  # base image with 4 tiles
+                x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc  # xmin, ymin, xmax, ymax (large image)
+                x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h  # xmin, ymin, xmax, ymax (small image)
             elif i == 1:  # top right
                 x1a, y1a, x2a, y2a = xc, max(yc - h, 0), min(xc + w, s * 2), yc
                 x1b, y1b, x2b, y2b = 0, h - (y2a - y1a), min(w, x2a - x1a), h
@@ -786,7 +786,7 @@ class LoadImagesAndLabels(Dataset):
             labels4.append(labels)
             segments4.extend(segments)
 
-        # Concat/clip annotations
+        # Concat/clip labels
         labels4 = np.concatenate(labels4, 0)
         for x in (labels4[:, 1:], *segments4):
             np.clip(x, 0, 2 * s, out=x)  # clip when using random_perspective()
@@ -807,19 +807,19 @@ class LoadImagesAndLabels(Dataset):
         return img4, labels4
 
     def load_mosaic9(self, index):
-        # YOLOv5 9-mosaic loader. Loads 1 images + 8 random images into a 9-images mosaic
+        # YOLOv5 9-mosaic loader. Loads 1 image + 8 random images into a 9-image mosaic
         labels9, segments9 = [], []
         s = self.img_size
-        indices = [index] + random.choices(self.indices, k=8)  # 8 additional images indices
+        indices = [index] + random.choices(self.indices, k=8)  # 8 additional image indices
         random.shuffle(indices)
         hp, wp = -1, -1  # height, width previous
         for i, index in enumerate(indices):
-            # Load images
+            # Load image
             img, _, (h, w) = self.load_image(index)
 
             # place img in img9
             if i == 0:  # center
-                img9 = np.full((s * 3, s * 3, img.shape[2]), 114, dtype=np.uint8)  # base images with 4 tiles
+                img9 = np.full((s * 3, s * 3, img.shape[2]), 114, dtype=np.uint8)  # base image with 4 tiles
                 h0, w0 = h, w
                 c = s, s, s + w, s + h  # xmin, ymin, xmax, ymax (base) coordinates
             elif i == 1:  # top
@@ -858,7 +858,7 @@ class LoadImagesAndLabels(Dataset):
         yc, xc = (int(random.uniform(0, s)) for _ in self.mosaic_border)  # mosaic center x, y
         img9 = img9[yc:yc + 2 * s, xc:xc + 2 * s]
 
-        # Concat/clip annotations
+        # Concat/clip labels
         labels9 = np.concatenate(labels9, 0)
         labels9[:, [1, 3]] -= xc
         labels9[:, [2, 4]] -= yc
@@ -887,7 +887,7 @@ class LoadImagesAndLabels(Dataset):
     def collate_fn(batch):
         im, label, path, shapes = zip(*batch)  # transposed
         for i, lb in enumerate(label):
-            lb[:, 0] = i  # add target images index for build_targets()
+            lb[:, 0] = i  # add target image index for build_targets()
         return torch.stack(im, 0), torch.cat(label, 0), path, shapes
 
     @staticmethod
@@ -912,7 +912,7 @@ class LoadImagesAndLabels(Dataset):
             label4.append(lb)
 
         for i, lb in enumerate(label4):
-            lb[:, 0] = i  # add target images index for build_targets()
+            lb[:, 0] = i  # add target image index for build_targets()
 
         return torch.stack(im4, 0), torch.cat(label4, 0), path4, shapes4
 
@@ -936,15 +936,15 @@ def extract_boxes(path=DATASETS_DIR / 'coco128'):  # from utils.dataloaders impo
     n = len(files)  # number of files
     for im_file in tqdm(files, total=n):
         if im_file.suffix[1:] in IMG_FORMATS:
-            # images
+            # image
             im = cv2.imread(str(im_file))[..., ::-1]  # BGR to RGB
             h, w = im.shape[:2]
 
-            # annotations
+            # labels
             lb_file = Path(img2label_paths([str(im_file)])[0])
             if Path(lb_file).exists():
                 with open(lb_file) as f:
-                    lb = np.array([x.split() for x in f.read().strip().splitlines()], dtype=np.float32)  # annotations
+                    lb = np.array([x.split() for x in f.read().strip().splitlines()], dtype=np.float32)  # labels
 
                 for j, x in enumerate(lb):
                     c = int(x[0])  # class
@@ -957,7 +957,7 @@ def extract_boxes(path=DATASETS_DIR / 'coco128'):  # from utils.dataloaders impo
                     b[2:] = b[2:] * 1.2 + 3  # pad
                     b = xywh2xyxy(b.reshape(-1, 4)).ravel().astype(int)
 
-                    b[[0, 2]] = np.clip(b[[0, 2]], 0, w)  # clip boxes outside of images
+                    b[[0, 2]] = np.clip(b[[0, 2]], 0, w)  # clip boxes outside of image
                     b[[1, 3]] = np.clip(b[[1, 3]], 0, h)
                     assert cv2.imwrite(str(f), im[b[1]:b[3], b[0]:b[2]]), f'box failure in {f}'
 
@@ -971,10 +971,10 @@ def autosplit(path=DATASETS_DIR / 'coco128/images', weights=(0.9, 0.1, 0.0), ann
         annotated_only:  Only use images with an annotated txt file
     """
     path = Path(path)  # images dir
-    files = sorted(x for x in path.rglob('*.*') if x.suffix[1:].lower() in IMG_FORMATS)  # images files only
+    files = sorted(x for x in path.rglob('*.*') if x.suffix[1:].lower() in IMG_FORMATS)  # image files only
     n = len(files)  # number of files
     random.seed(0)  # for reproducibility
-    indices = random.choices([0, 1, 2], weights=weights, k=n)  # assign each images to a split
+    indices = random.choices([0, 1, 2], weights=weights, k=n)  # assign each image to a split
 
     txt = ['autosplit_train.txt', 'autosplit_val.txt', 'autosplit_test.txt']  # 3 txt files
     for x in txt:
@@ -985,20 +985,20 @@ def autosplit(path=DATASETS_DIR / 'coco128/images', weights=(0.9, 0.1, 0.0), ann
     for i, img in tqdm(zip(indices, files), total=n):
         if not annotated_only or Path(img2label_paths([str(img)])[0]).exists():  # check label
             with open(path.parent / txt[i], 'a') as f:
-                f.write(f'./{img.relative_to(path.parent).as_posix()}' + '\n')  # add images to txt file
+                f.write(f'./{img.relative_to(path.parent).as_posix()}' + '\n')  # add image to txt file
 
 
 def verify_image_label(args):
-    # Verify one images-label pair
+    # Verify one image-label pair
     im_file, lb_file, prefix = args
     nm, nf, ne, nc, msg, segments = 0, 0, 0, 0, '', []  # number (missing, found, empty, corrupt), message, segments
     try:
         # verify images
         im = Image.open(im_file)
         im.verify()  # PIL verify
-        shape = exif_size(im)  # images size
-        assert (shape[0] > 9) & (shape[1] > 9), f'images size {shape} <10 pixels'
-        assert im.format.lower() in IMG_FORMATS, f'invalid images format {im.format}'
+        shape = exif_size(im)  # image size
+        assert (shape[0] > 9) & (shape[1] > 9), f'image size {shape} <10 pixels'
+        assert im.format.lower() in IMG_FORMATS, f'invalid image format {im.format}'
         if im.format.lower() in ('jpg', 'jpeg'):
             with open(im_file, 'rb') as f:
                 f.seek(-2, 2)
@@ -1006,7 +1006,7 @@ def verify_image_label(args):
                     ImageOps.exif_transpose(Image.open(im_file)).save(im_file, 'JPEG', subsampling=0, quality=100)
                     msg = f'{prefix}WARNING ⚠️ {im_file}: corrupt JPEG restored and saved'
 
-        # verify annotations
+        # verify labels
         if os.path.isfile(lb_file):
             nf = 1  # label found
             with open(lb_file) as f:
@@ -1018,7 +1018,7 @@ def verify_image_label(args):
                 lb = np.array(lb, dtype=np.float32)
             nl = len(lb)
             if nl:
-                assert lb.shape[1] == 5, f'annotations require 5 columns, {lb.shape[1]} columns detected'
+                assert lb.shape[1] == 5, f'labels require 5 columns, {lb.shape[1]} columns detected'
                 assert (lb >= 0).all(), f'negative label values {lb[lb < 0]}'
                 assert (lb[:, 1:] <= 1).all(), f'non-normalized or out of bounds coordinates {lb[:, 1:][lb[:, 1:] > 1]}'
                 _, i = np.unique(lb, axis=0, return_index=True)
@@ -1026,7 +1026,7 @@ def verify_image_label(args):
                     lb = lb[i]  # remove duplicates
                     if segments:
                         segments = [segments[x] for x in i]
-                    msg = f'{prefix}WARNING ⚠️ {im_file}: {nl - len(i)} duplicate annotations removed'
+                    msg = f'{prefix}WARNING ⚠️ {im_file}: {nl - len(i)} duplicate labels removed'
             else:
                 ne = 1  # label empty
                 lb = np.zeros((0, 5), dtype=np.float32)
@@ -1036,7 +1036,7 @@ def verify_image_label(args):
         return im_file, lb, shape, segments, nm, nf, ne, nc, msg
     except Exception as e:
         nc = 1
-        msg = f'{prefix}WARNING ⚠️ {im_file}: ignoring corrupt images/label: {e}'
+        msg = f'{prefix}WARNING ⚠️ {im_file}: ignoring corrupt image/label: {e}'
         return [None, None, None, None, nm, nf, ne, nc, msg]
 
 
@@ -1095,12 +1095,12 @@ class HUBDatasetStats():
         return True, str(dir), self._find_yaml(dir)  # zipped, data_dir, yaml_path
 
     def _hub_ops(self, f, max_dim=1920):
-        # HUB ops for 1 images 'f': resize and save at reduced quality in /dataset-hub for web/app viewing
-        f_new = self.im_dir / Path(f).name  # dataset-hub images filename
+        # HUB ops for 1 image 'f': resize and save at reduced quality in /dataset-hub for web/app viewing
+        f_new = self.im_dir / Path(f).name  # dataset-hub image filename
         try:  # use PIL
             im = Image.open(f)
             r = max_dim / max(im.height, im.width)  # ratio
-            if r < 1.0:  # images too large
+            if r < 1.0:  # image too large
                 im = im.resize((int(im.width * r), int(im.height * r)))
             im.save(f_new, 'JPEG', quality=50, optimize=True)  # save
         except Exception as e:  # use OpenCV
@@ -1108,14 +1108,14 @@ class HUBDatasetStats():
             im = cv2.imread(f)
             im_height, im_width = im.shape[:2]
             r = max_dim / max(im_height, im_width)  # ratio
-            if r < 1.0:  # images too large
+            if r < 1.0:  # image too large
                 im = cv2.resize(im, (int(im_width * r), int(im_height * r)), interpolation=cv2.INTER_AREA)
             cv2.imwrite(str(f_new), im)
 
     def get_json(self, save=False, verbose=False):
         # Return dataset JSON for Ultralytics HUB
         def _round(labels):
-            # Update annotations to integer class and 6 decimal place floats
+            # Update labels to integer class and 6 decimal place floats
             return [[int(c), *(round(x, 4) for x in points)] for c, *points in labels]
 
         for split in 'train', 'val', 'test':
@@ -1134,7 +1134,7 @@ class HUBDatasetStats():
                     'total': dataset.n,
                     'unlabelled': int(np.all(x == 0, 1).sum()),
                     'per_class': (x > 0).sum(0).tolist()},
-                'annotations': [{
+                'labels': [{
                     str(Path(k).name): _round(v.tolist())} for k, v in zip(dataset.im_files, dataset.labels)]}
 
         # Save, print and return
@@ -1179,17 +1179,17 @@ class ClassificationDataset(torchvision.datasets.ImageFolder):
         self.samples = [list(x) + [Path(x[0]).with_suffix('.npy'), None] for x in self.samples]  # file, index, npy, im
 
     def __getitem__(self, i):
-        f, j, fn, im = self.samples[i]  # filename, index, filename.with_suffix('.npy'), images
+        f, j, fn, im = self.samples[i]  # filename, index, filename.with_suffix('.npy'), image
         if self.cache_ram and im is None:
             im = self.samples[i][3] = cv2.imread(f)
         elif self.cache_disk:
             if not fn.exists():  # load npy
                 np.save(fn.as_posix(), cv2.imread(f))
             im = np.load(fn)
-        else:  # read images
+        else:  # read image
             im = cv2.imread(f)  # BGR
         if self.album_transforms:
-            sample = self.album_transforms(image=cv2.cvtColor(im, cv2.COLOR_BGR2RGB))['images']
+            sample = self.album_transforms(image=cv2.cvtColor(im, cv2.COLOR_BGR2RGB))['image']
         else:
             sample = self.torch_transforms(im)
         return sample, j

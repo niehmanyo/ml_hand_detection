@@ -6,8 +6,6 @@ import osascript
 import pyautogui
 import numpy as np
 
-from HandAlgorithm import HandAlgorithm
-
 """
 developer: niewenyu
 """
@@ -79,32 +77,29 @@ class HandDetector():
                         # if distance < 0.8:
                         #     cv2.circle(img, (cx,cy), 25, (255, 0, 255), cv2.FILLED)
 
-                #     print("distance", distance)
-                distance = math.dist(id_4, id_8)
-                # print("distance",distance)
+                        #     print("distance", distance)
+                        distance = math.dist(id_4, id_8)
+                        # print("distance",distance)
 
+                        #
+                        # if distance > 300:
+                        #     controlKeyBoard()
 
-                #
-                # if distance > 300:
-                #     controlKeyBoard()
+                        # x = pyautogui.size().width * handLms.landmark[0].x
+                        # y = pyautogui.size().height * handLms.landmark[0].y
+                        # pyautogui.moveTo(x,y)
 
-                x = pyautogui.size().width * handLms.landmark[0].x
-                y = pyautogui.size().height * handLms.landmark[0].y
-                pyautogui.moveTo(x,y)
-                if distance < 30:
-                    # set the volume
-                    # volume = 100 / 260 * (distance - 20)
-                    # osascript.osascript("set volume output volume " + str(volume))
-                    pyautogui.mouseDown()
-                else:
-                    pyautogui.mouseUp()
+                        # set the volume
+                        volume = 100 / 260 * (distance - 20)
+                        osascript.osascript("set volume output volume " + str(volume))
+                        # pyautogui.mouseDown()
                 cv2.line(img, id_4, id_8, (255, 255, 255), 3)
                 self.myDraw.draw_landmarks(img, handLms, self.myHands.HAND_CONNECTIONS)
-
         return img
 
-    def findPosition(self, img, handNo=0):
-        results = self.hands.process(img)
+
+def findPosition(self, img, handNo=0):
+    results = self.hands.process(img)
 
 
 def main():

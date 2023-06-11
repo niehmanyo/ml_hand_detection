@@ -25,7 +25,7 @@ def smooth(y, f=0.05):
     nf = round(len(y) * f * 2) // 2 + 1  # number of filter elements (must be odd)
     p = np.ones(nf // 2)  # ones padding
     yp = np.concatenate((p * y[0], y, p * y[-1]), 0)  # y padded
-    return np.convolve(yp, np.ones(nf) / nf, mode='annotations')  # y-smoothed
+    return np.convolve(yp, np.ones(nf) / nf, mode='valid')  # y-smoothed
 
 
 def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names=(), eps=1e-16, prefix=''):
@@ -55,7 +55,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, save_dir='.', names
     ap, p, r = np.zeros((nc, tp.shape[1])), np.zeros((nc, 1000)), np.zeros((nc, 1000))
     for ci, c in enumerate(unique_classes):
         i = pred_cls == c
-        n_l = nt[ci]  # number of annotations
+        n_l = nt[ci]  # number of labels
         n_p = i.sum()  # number of predictions
         if n_p == 0 or n_l == 0:
             continue

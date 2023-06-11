@@ -35,6 +35,7 @@ import pkg_resources as pkg
 import torch
 import torchvision
 import yaml
+from ultralytics.yolo.utils.checks import check_requirements
 
 from utils import TryExcept, emojis
 from utils.downloads import curl_download, gsutil_getsize
@@ -387,59 +388,8 @@ def check_version(current='0.0.0', minimum='0.0.0', name='version ', pinned=Fals
     return result
 
 
-@TryExcept()
-def check_requirements(requirements=ROOT.parent / 'requirements.txt', exclude=(), install=True, cmds=''):
-    """
-    Check if installed dependencies meet YOLOv5 requirements and attempt to auto-update if needed.
-
-    Args:
-        requirements (Union[Path, str, List[str]]): Path to a requirements.txt file, a single package requirement as a
-            string, or a list of package requirements as strings.
-        exclude (Tuple[str]): Tuple of package names to exclude from checking.
-        install (bool): If True, attempt to auto-update packages that don't meet requirements.
-        cmds (str): Additional commands to pass to the pip install command when auto-updating.
-
-    Returns:
-        None
-    """
-    prefix = colorstr('red', 'bold', 'requirements:')
-    check_python()  # check python version
-    file = None
-    if isinstance(requirements, Path):  # requirements.txt file
-        file = requirements.resolve()
-        assert file.exists(), f'{prefix} {file} not found, check failed.'
-        with file.open() as f:
-            requirements = [f'{x.name}{x.specifier}' for x in pkg.parse_requirements(f) if x.name not in exclude]
-    elif isinstance(requirements, str):
-        requirements = [requirements]
-
-    s = ''  # console string
-    n = 0  # number of packages updates
-    for r in requirements:
-        try:
-            pkg.require(r)
-        except (pkg.VersionConflict, pkg.DistributionNotFound):  # exception if requirements not met
-            try:  # attempt to import (slower but more accurate)
-                import importlib
-                importlib.import_module(next(pkg.parse_requirements(r)).name)
-            except ImportError:
-                s += f'"{r}" '
-                n += 1
-
-    if s and install and AUTOINSTALL:  # check environment variable
-        LOGGER.info(f"{prefix} YOLOv5 requirement{'s' * (n > 1)} {s}not found, attempting AutoUpdate...")
-        try:
-            assert check_online(), 'AutoUpdate skipped (offline)'
-            LOGGER.info(subprocess.check_output(f'pip install {s} {cmds}', shell=True).decode())
-            s = f"{prefix} {n} package{'s' * (n > 1)} updated per {file or requirements}\n" \
-                f"{prefix} ⚠️ {colorstr('bold', 'Restart runtime or rerun command for updates to take effect')}\n"
-            LOGGER.info(s)
-        except Exception as e:
-            LOGGER.warning(f'{prefix} ❌ {e}')
-
-
 def check_img_size(imgsz, s=32, floor=0):
-    # Verify images size is a multiple of stride s in each dimension
+    # Verify image size is a multiple of stride s in each dimension
     if isinstance(imgsz, int):  # integer i.e. img_size=640
         new_size = max(make_divisible(imgsz, int(s)), floor)
     else:  # list i.e. img_size=[640, 480]
@@ -451,7 +401,7 @@ def check_img_size(imgsz, s=32, floor=0):
 
 
 def check_imshow(warn=False):
-    # Check if environment supports images displays
+    # Check if environment supports image displays
     try:
         assert not is_jupyter()
         assert not is_docker()
@@ -602,7 +552,7 @@ def check_amp(model):
     device = next(model.parameters()).device  # get model device
     if device.type in ('cpu', 'mps'):
         return False  # AMP only used on CUDA devices
-    f = ROOT / 'data' / 'images' / 'bus.jpg'  # images to check
+    f = ROOT / 'data' / 'images' / 'bus.jpg'  # image to check
     im = f if f.exists() else 'https://ultralytics.com/images/bus.jpg' if check_online() else np.ones((640, 640, 3))
     try:
         assert amp_allclose(deepcopy(model), im) or amp_allclose(DetectMultiBackend('yolov5n.pt', device), im)
@@ -732,17 +682,17 @@ def colorstr(*input):
 
 
 def labels_to_class_weights(labels, nc=80):
-    # Get class weights (inverse frequency) from training annotations
-    if labels[0] is None:  # no annotations loaded
+    # Get class weights (inverse frequency) from training labels
+    if labels[0] is None:  # no labels loaded
         return torch.Tensor()
 
-    labels = np.concatenate(labels, 0)  # annotations.shape = (866643, 5) for COCO
-    classes = labels[:, 0].astype(int)  # annotations = [class xywh]
+    labels = np.concatenate(labels, 0)  # labels.shape = (866643, 5) for COCO
+    classes = labels[:, 0].astype(int)  # labels = [class xywh]
     weights = np.bincount(classes, minlength=nc)  # occurrences per class
 
     # Prepend gridpoint count (for uCE training)
-    # gpi = ((320 / 32 * np.array([1, 2, 4])) ** 2 * 3).sum()  # gridpoints per images
-    # weights = np.hstack([gpi * len(annotations)  - weights.sum() * 9, weights * 9]) ** 0.5  # prepend gridpoints to start
+    # gpi = ((320 / 32 * np.array([1, 2, 4])) ** 2 * 3).sum()  # gridpoints per image
+    # weights = np.hstack([gpi * len(labels)  - weights.sum() * 9, weights * 9]) ** 0.5  # prepend gridpoints to start
 
     weights[weights == 0] = 1  # replace empty bins with 1
     weights = 1 / weights  # number of targets per class
@@ -751,8 +701,8 @@ def labels_to_class_weights(labels, nc=80):
 
 
 def labels_to_image_weights(labels, nc=80, class_weights=np.ones(80)):
-    # Produces images weights based on class_weights and images contents
-    # Usage: index = random.choices(range(n), weights=image_weights, k=1)  # weighted images sample
+    # Produces image weights based on class_weights and image contents
+    # Usage: index = random.choices(range(n), weights=image_weights, k=1)  # weighted image sample
     class_counts = np.array([np.bincount(x[:, 0].astype(int), minlength=nc) for x in labels])
     return (class_weights.reshape(1, nc) * class_counts).sum(1)
 
@@ -820,7 +770,7 @@ def xyn2xy(x, w=640, h=640, padw=0, padh=0):
 
 
 def segment2box(segment, width=640, height=640):
-    # Convert 1 segment label to 1 box label, applying inside-images constraint, i.e. (xy1, xy2, ...) to (xyxy)
+    # Convert 1 segment label to 1 box label, applying inside-image constraint, i.e. (xy1, xy2, ...) to (xyxy)
     x, y = segment.T  # segment xy
     inside = (x >= 0) & (y >= 0) & (x <= width) & (y <= height)
     x, y, = x[inside], y[inside]
@@ -828,7 +778,7 @@ def segment2box(segment, width=640, height=640):
 
 
 def segments2boxes(segments):
-    # Convert segment annotations to box annotations, i.e. (cls, xy1, xy2, ...) to (cls, xywh)
+    # Convert segment labels to box labels, i.e. (cls, xy1, xy2, ...) to (cls, xywh)
     boxes = []
     for s in segments:
         x, y = s.T  # segment xy
@@ -882,7 +832,7 @@ def scale_segments(img1_shape, segments, img0_shape, ratio_pad=None, normalize=F
 
 
 def clip_boxes(boxes, shape):
-    # Clip boxes (xyxy) to images shape (height, width)
+    # Clip boxes (xyxy) to image shape (height, width)
     if isinstance(boxes, torch.Tensor):  # faster individually
         boxes[..., 0].clamp_(0, shape[1])  # x1
         boxes[..., 1].clamp_(0, shape[0])  # y1
@@ -894,7 +844,7 @@ def clip_boxes(boxes, shape):
 
 
 def clip_segments(segments, shape):
-    # Clip segments (xy1,xy2,...) to images shape (height, width)
+    # Clip segments (xy1,xy2,...) to image shape (height, width)
     if isinstance(segments, torch.Tensor):  # faster individually
         segments[:, 0].clamp_(0, shape[1])  # x
         segments[:, 1].clamp_(0, shape[0])  # y
@@ -917,7 +867,7 @@ def non_max_suppression(
     """Non-Maximum Suppression (NMS) on inference results to reject overlapping detections
 
     Returns:
-         list of detections, on (n,6) tensor per images [xyxy, conf, cls]
+         list of detections, on (n,6) tensor per image [xyxy, conf, cls]
     """
 
     # Checks
@@ -940,18 +890,18 @@ def non_max_suppression(
     max_nms = 30000  # maximum number of boxes into torchvision.ops.nms()
     time_limit = 0.5 + 0.05 * bs  # seconds to quit after
     redundant = True  # require redundant detections
-    multi_label &= nc > 1  # multiple annotations per box (adds 0.5ms/img)
+    multi_label &= nc > 1  # multiple labels per box (adds 0.5ms/img)
     merge = False  # use merge-NMS
 
     t = time.time()
     mi = 5 + nc  # mask start index
     output = [torch.zeros((0, 6 + nm), device=prediction.device)] * bs
-    for xi, x in enumerate(prediction):  # images index, images inference
+    for xi, x in enumerate(prediction):  # image index, image inference
         # Apply constraints
         # x[((x[..., 2:4] < min_wh) | (x[..., 2:4] > max_wh)).any(1), 4] = 0  # width-height
         x = x[xc[xi]]  # confidence
 
-        # Cat apriori annotations if autolabelling
+        # Cat apriori labels if autolabelling
         if labels and len(labels[xi]):
             lb = labels[xi]
             v = torch.zeros((len(lb), nc + nm + 5), device=x.device)
@@ -960,7 +910,7 @@ def non_max_suppression(
             v[range(len(lb)), lb[:, 0].long() + 5] = 1.0  # cls
             x = torch.cat((x, v), 0)
 
-        # If none remain process next images
+        # If none remain process next image
         if not x.shape[0]:
             continue
 
@@ -1075,7 +1025,7 @@ def apply_classifier(x, model, img, im0):
     # Apply a second stage classifier to YOLO outputs
     # Example model = torchvision.models.__dict__['efficientnet_b0'](pretrained=True).to(device).eval()
     im0 = [im0] if isinstance(im0, np.ndarray) else im0
-    for i, d in enumerate(x):  # per images
+    for i, d in enumerate(x):  # per image
         if d is not None and len(d):
             d = d.clone()
 
