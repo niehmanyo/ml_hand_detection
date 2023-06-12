@@ -1,0 +1,26 @@
+# @author: niewenyu
+# parent
+# ├── yolov5
+# └── datasets
+#     └── hand_gestures  ←
+
+
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+# path: ../datasets/coco128  # dataset root dir
+train: /Users/kobe/ml_hand_detection/yolov5/vocdatasets/images/train  # train images (relative to 'path') 128 images  训练集合
+val: /Users/kobe/ml_hand_detection/yolov5/vocdatasets/images/val # val images (relative to 'path') 128 images 验证集合
+# test:  # test images (optional)
+
+# Classes
+names:
+  0: Right
+  1: Left
+  2: Down
+  3: One
+  4: Two
+  5: Three
+  6: Four
+  7: Five
+
+
+

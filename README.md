@@ -45,9 +45,10 @@ All source codes -> [src](src)
 
 ### Results:
 
-training model dic -> [VOCData](yolov5/VOCData)
+training model dic -> [datasets](yolov5/vocdatasets)
 
 ### Reference:
+https://blog.csdn.net/didiaopao/article/details/119954291 (The most important 🌟)
 
 https://www.markdownguide.org/ (markdown guide)
 
@@ -72,5 +73,7 @@ https://docs.ultralytics.com/yolov5/tutorials/train_custom_data/ (use yolov5)
 https://blog.csdn.net/qq_45945548/article/details/121701492 (How to use yolov5)
 
 https://blog.csdn.net/didiaopao/article/details/119954291 (How to use yolov5)
+
+https://zhuanlan.zhihu.com/p/587808267 (解析yolov5)
 
 
