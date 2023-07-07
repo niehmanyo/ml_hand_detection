@@ -1,8 +1,7 @@
-Zero
-Hand
-Six
-Five
-Four
-Three
 Two
 One
+Three
+Four
+Five
+Six
+Zero

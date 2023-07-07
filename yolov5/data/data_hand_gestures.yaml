@@ -13,14 +13,13 @@ val: /Users/kobe/ml_hand_detection/yolov5/vocdatasets/images/val # val images (r
 
 # Classes
 names:
-    0: Zero
-    1: Hand
-    2: Six
-    3: Five
-    4: Four
-    5: Three
-    6: Two
-    7: One
+    0: Two
+    1: One
+    2: Three
+    3: Four
+    4: Five
+    5: Six
+    6: Zero
 
 
 
